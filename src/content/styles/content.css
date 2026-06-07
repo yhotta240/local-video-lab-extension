@@ -186,6 +186,27 @@
   transform: translateY(0);
 }
 
+.lvl-root.is-pointer-idle:not(.is-empty):not(.is-dragging):not(.is-drag-seeking) {
+  cursor: none;
+}
+
+.lvl-root.is-pointer-idle:not(.is-empty):not(.is-dragging):not(.is-drag-seeking) .lvl-video,
+.lvl-root.is-pointer-idle:not(.is-empty):not(.is-dragging):not(.is-drag-seeking) .lvl-stage {
+  cursor: none;
+}
+
+.lvl-root.is-pointer-idle:not(.is-empty):not(.is-dragging):not(.is-drag-seeking) .lvl-toolbar {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-12px);
+}
+
+.lvl-root.is-pointer-idle:not(.is-empty):not(.is-dragging):not(.is-drag-seeking) .lvl-controls {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+}
+
 .lvl-controls-inner {
   display: grid;
   grid-template-areas: "playback loop create actions";

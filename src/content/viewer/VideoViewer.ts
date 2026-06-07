@@ -56,6 +56,7 @@ export class VideoViewer {
   private currentObjectUrl: string | null = null;
   private currentName = "video";
   private statusTimer = 0;
+  private pointerIdleTimer = 0;
   private controlResizeObserver: ResizeObserver | null = null;
   private dragSeek: {
     pointerId: number;
@@ -103,6 +104,7 @@ export class VideoViewer {
     this.bindShortcuts();
     this.shortcut.bind();
     this.bindControlLayout();
+    this.bindPointerIdle();
 
     if (this.options.sourceUrl && this.options.sourceName && isProbablyVideoUrl(this.options.sourceName)) {
       this.loadUrl(this.options.sourceUrl, this.options.sourceName);
@@ -112,6 +114,7 @@ export class VideoViewer {
   destroy(): void {
     for (const fn of this.cleanup.splice(0)) fn();
     this.shortcut.destroy();
+    window.clearTimeout(this.pointerIdleTimer);
     this.controlResizeObserver?.disconnect();
     this.loop.destroy();
     this.skip.destroy();
@@ -380,6 +383,29 @@ export class VideoViewer {
     this.controlResizeObserver = new ResizeObserver(update);
     this.controlResizeObserver.observe(this.ui.controls);
     requestAnimationFrame(update);
+  }
+
+  private bindPointerIdle(): void {
+    const idleDelayMs = 2000;
+    const showPointerUi = () => {
+      this.ui.root.classList.remove("is-pointer-idle");
+      window.clearTimeout(this.pointerIdleTimer);
+      this.pointerIdleTimer = window.setTimeout(() => {
+        if (this.ui.root.classList.contains("is-empty") || this.ui.root.classList.contains("is-dragging")) {
+          return;
+        }
+        this.ui.root.classList.add("is-pointer-idle");
+      }, idleDelayMs);
+    };
+
+    this.ui.root.addEventListener("pointermove", showPointerUi);
+    this.ui.root.addEventListener("pointerdown", showPointerUi);
+    this.cleanup.push(() => {
+      this.ui.root.removeEventListener("pointermove", showPointerUi);
+      this.ui.root.removeEventListener("pointerdown", showPointerUi);
+      window.clearTimeout(this.pointerIdleTimer);
+    });
+    showPointerUi();
   }
 
   private bindShortcuts(): void {
