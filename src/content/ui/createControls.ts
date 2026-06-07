@@ -14,6 +14,7 @@ export interface ControlElements {
   chapter: HTMLButtonElement;
   subtitles: HTMLButtonElement;
   tools: HTMLButtonElement;
+  more: HTMLButtonElement;
   loopStart: HTMLButtonElement;
   loopEnd: HTMLButtonElement;
   loopClear: HTMLButtonElement;
@@ -82,6 +83,11 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
     { class: "btn lvl-icon-btn lvl-tools-control", type: "button", title: "ツールパネル" },
     [el("i", { class: "bi bi-sliders", "aria-hidden": "true" })],
   ) as HTMLButtonElement;
+  const more = el(
+    "button",
+    { class: "btn lvl-icon-btn lvl-more-control", type: "button", title: "その他" },
+    [el("i", { class: "bi bi-three-dots", "aria-hidden": "true" })],
+  ) as HTMLButtonElement;
   const loopStart = el(
     "button",
     { class: "btn lvl-mini-btn", type: "button", title: "ループ開始を現在時刻に設定" },
@@ -112,6 +118,15 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
       chapter,
       subtitles,
       tools,
+      el("div", { class: "lvl-more-wrap" }, [
+        more,
+        el("div", { class: "lvl-more-menu", role: "menu" }, [
+          cloneMenuButton("camera", "スクリーンショット", "screenshot"),
+          cloneMenuButton("bookmark-plus", "チャプター追加", "chapter"),
+          cloneMenuButton("badge-cc", "字幕を読み込む", "subtitles"),
+          cloneMenuButton("sliders", "ツールパネル", "tools"),
+        ]),
+      ]),
     ]),
     el("div", { class: "lvl-control-group lvl-audio-group" }, [rate, volume, mute, pip]),
     el("div", { class: "lvl-control-group lvl-fullscreen-group" }, [fullscreen]),
@@ -131,6 +146,7 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
       chapter,
       subtitles,
       tools,
+      more,
       loopStart,
       loopEnd,
       loopClear,
@@ -138,4 +154,12 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
       timeLabel,
     },
   };
+}
+
+function cloneMenuButton(icon: string, label: string, action: string): HTMLButtonElement {
+  return el(
+    "button",
+    { class: "lvl-more-item", type: "button", "data-action": action, role: "menuitem" },
+    [el("i", { class: `bi bi-${icon}`, "aria-hidden": "true" }), el("span", {}, [label])],
+  ) as HTMLButtonElement;
 }

@@ -214,15 +214,9 @@
 
 .lvl-create-group {
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
   padding-left: 10px;
   border-left: 1px solid var(--lvl-border);
-  scrollbar-width: none;
-}
-
-.lvl-create-group::-webkit-scrollbar {
-  display: none;
+  overflow: visible;
 }
 
 .lvl-audio-group {
@@ -311,6 +305,10 @@
 .lvl-root:has(.lvl-side-toggle:hover) .lvl-side,
 .lvl-side:hover {
   transform: translateX(0);
+}
+
+.lvl-root.is-side-suppressed .lvl-side {
+  transform: translateX(100%);
 }
 
 .lvl-root.is-side-pinned .lvl-side {
@@ -565,6 +563,57 @@
   display: none;
 }
 
+.lvl-more-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.lvl-more-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: grid;
+  min-width: 172px;
+  padding: 6px;
+  border: 1px solid var(--lvl-border);
+  border-radius: 8px;
+  background: rgba(21, 24, 32, 0.96);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.lvl-more-wrap:hover .lvl-more-menu,
+.lvl-more-wrap:focus-within .lvl-more-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.lvl-more-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  color: var(--lvl-text);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.lvl-more-item:hover {
+  background: var(--lvl-panel-hover);
+}
+
 .lvl-danger-btn {
   color: var(--lvl-danger);
 }
@@ -684,11 +733,12 @@
 
 @media (max-width: 900px) {
   .lvl-controls-inner {
-    grid-template-columns: auto auto minmax(0, 96px) auto auto;
+    grid-template-columns: auto auto minmax(0, 116px) auto auto;
   }
 
-  .lvl-create-group {
-    max-width: 96px;
+  .lvl-create-group .lvl-optional-control:nth-of-type(3),
+  .lvl-tools-control {
+    display: none;
   }
 
   .lvl-volume {
@@ -708,6 +758,10 @@
   .lvl-volume {
     display: none;
   }
+
+  .lvl-create-group .lvl-optional-control:nth-of-type(3) {
+    display: none;
+  }
 }
 
 @media (max-width: 680px) {
@@ -721,7 +775,7 @@
 
   .lvl-controls-inner {
     grid-template-columns: auto auto minmax(0, 40px) auto auto;
-    overflow-x: auto;
+    overflow-x: hidden;
     padding-bottom: 2px;
   }
 
@@ -735,12 +789,12 @@
   }
 
   .lvl-loop-summary,
-  .lvl-optional-control {
+  .lvl-optional-control,
+  .lvl-tools-control {
     display: none;
   }
 
   .lvl-create-group {
-    max-width: 40px;
     padding-left: 6px;
     overflow: visible;
   }

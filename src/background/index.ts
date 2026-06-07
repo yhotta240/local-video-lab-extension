@@ -20,6 +20,16 @@ async function notifyActiveTab(enabled: boolean): Promise<void> {
     .catch(() => undefined);
 }
 
+async function toggleWindowFullscreen(): Promise<boolean> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.windowId) return false;
+
+  const currentWindow = await chrome.windows.get(tab.windowId);
+  const fullscreen = currentWindow.state !== "fullscreen";
+  await chrome.windows.update(tab.windowId, { state: fullscreen ? "fullscreen" : "normal" });
+  return fullscreen;
+}
+
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
     logInfo("拡張機能がインストールされました", "background");
@@ -44,4 +54,14 @@ chrome.action.onClicked.addListener(() => {
     await notifyActiveTab(enabled);
     logInfo(`Local Video Lab: ${enabled ? "enabled" : "disabled"}`, "background");
   })();
+});
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type !== "LOCAL_VIDEO_LAB_TOGGLE_WINDOW_FULLSCREEN") return false;
+
+  void toggleWindowFullscreen()
+    .then((fullscreen) => sendResponse({ fullscreen }))
+    .catch(() => sendResponse({ fullscreen: false }));
+
+  return true;
 });

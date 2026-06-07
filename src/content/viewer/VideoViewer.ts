@@ -188,6 +188,11 @@ export class VideoViewer {
       this.ui.root.classList.toggle("is-side-pinned");
       this.syncSidePinUi();
     });
+    this.controls.root.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action]");
+      if (!button) return;
+      this.handleMoreAction(button.dataset.action ?? "");
+    });
     on(this.controls.elements.rate, "change", () =>
       this.controller.setRate(Number(this.controls.elements.rate.value)),
     );
@@ -204,20 +209,23 @@ export class VideoViewer {
       () =>
         void this.controller.togglePiP().catch(() => this.showStatus("PiPを開始できませんでした")),
     );
-    on(
-      this.controls.elements.fullscreen,
-      "click",
-      () => void this.controller.toggleFullscreen(this.ui.root),
-    );
+    on(this.controls.elements.fullscreen, "click", () => void this.toggleWindowFullscreen());
     on(this.ui.timeline, "input", () => this.controller.seekTo(Number(this.ui.timeline.value)));
     on(this.ui.sideToggle, "click", () => {
       this.toggleSidePin();
+    });
+    on(this.ui.sideToggle, "mouseenter", () => {
+      this.ui.root.classList.remove("is-side-suppressed");
+    });
+    on(this.ui.sidePanel, "mouseleave", () => {
+      this.ui.root.classList.remove("is-side-suppressed");
     });
     on(this.ui.sidePin, "click", () => {
       this.toggleSidePin();
     });
     on(this.ui.sideClose, "click", () => {
       this.ui.root.classList.remove("is-side-pinned");
+      this.ui.root.classList.add("is-side-suppressed");
       this.syncSidePinUi();
     });
 
@@ -515,10 +523,49 @@ export class VideoViewer {
     this.syncSidePinUi();
   }
 
+  private handleMoreAction(action: string): void {
+    switch (action) {
+      case "screenshot": {
+        const format = `image/${this.state.settings.screenshotFormat}`;
+        void this.screenshot.capture(
+          this.currentName,
+          format,
+          this.state.settings.screenshotQuality,
+        );
+        break;
+      }
+      case "chapter":
+        this.chapter.addCurrentTime();
+        this.state.chapters = this.chapter.getChapters();
+        this.renderChapterList();
+        this.showStatus("チャプターを追加しました");
+        break;
+      case "subtitles":
+        this.toolbar.elements.subtitleInput.click();
+        break;
+      case "tools":
+        this.ui.root.classList.toggle("is-side-pinned");
+        this.syncSidePinUi();
+        break;
+    }
+  }
+
   private syncSidePinUi(): void {
     const pinned = this.ui.root.classList.contains("is-side-pinned");
     this.ui.sideToggle.setAttribute("aria-label", pinned ? "ツール固定を解除" : "ツールを固定");
     this.ui.sideToggle.title = pinned ? "ツール固定を解除" : "ツールを固定";
+  }
+
+  private async toggleWindowFullscreen(): Promise<void> {
+    const response = await chrome.runtime
+      .sendMessage({ type: "LOCAL_VIDEO_LAB_TOGGLE_WINDOW_FULLSCREEN" })
+      .catch(() => null);
+    const fullscreen = Boolean(response?.fullscreen);
+    setIconButton(
+      this.controls.elements.fullscreen,
+      fullscreen ? "fullscreen-exit" : "fullscreen",
+      fullscreen ? "全画面解除" : "全画面",
+    );
   }
 
   private updateLoopSummary(): void {
