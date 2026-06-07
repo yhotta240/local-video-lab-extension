@@ -28,6 +28,12 @@ async function toggleWindowFullscreen(): Promise<boolean> {
   return fullscreen;
 }
 
+async function captureVisibleTab(): Promise<string | null> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.windowId) return null;
+  return chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+}
+
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
     logInfo("拡張機能がインストールされました", "background");
@@ -52,11 +58,21 @@ chrome.action.onClicked.addListener(() => {
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type !== "LOCAL_VIDEO_LAB_TOGGLE_WINDOW_FULLSCREEN") return false;
+  if (message?.type === "LOCAL_VIDEO_LAB_CAPTURE_VISIBLE_TAB") {
+    void captureVisibleTab()
+      .then((dataUrl) => sendResponse({ dataUrl }))
+      .catch(() => sendResponse({ dataUrl: null }));
 
-  void toggleWindowFullscreen()
-    .then((fullscreen) => sendResponse({ fullscreen }))
-    .catch(() => sendResponse({ fullscreen: false }));
+    return true;
+  }
 
-  return true;
+  if (message?.type === "LOCAL_VIDEO_LAB_TOGGLE_WINDOW_FULLSCREEN") {
+    void toggleWindowFullscreen()
+      .then((fullscreen) => sendResponse({ fullscreen }))
+      .catch(() => sendResponse({ fullscreen: false }));
+
+    return true;
+  }
+
+  return false;
 });

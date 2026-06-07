@@ -872,3 +872,15 @@
     padding: 8px;
   }
 }
+
+.lvl-root.is-capturing-frame .lvl-toolbar,
+.lvl-root.is-capturing-frame .lvl-controls,
+.lvl-root.is-capturing-frame .lvl-timeline,
+.lvl-root.is-capturing-frame .lvl-side-toggle,
+.lvl-root.is-capturing-frame .lvl-side,
+.lvl-root.is-capturing-frame .lvl-status,
+.lvl-root.is-capturing-frame .lvl-drag-hud,
+.lvl-root.is-capturing-frame .lvl-drop-zone {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}

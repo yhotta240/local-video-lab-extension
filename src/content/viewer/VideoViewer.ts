@@ -171,10 +171,7 @@ export class VideoViewer {
     on(this.controls.elements.loopClear, "click", () => {
       this.clearLoop();
     });
-    on(this.controls.elements.screenshot, "click", () => {
-      const format = `image/${this.state.settings.screenshotFormat}`;
-      void this.screenshot.capture(this.currentName, format, this.state.settings.screenshotQuality);
-    });
+    on(this.controls.elements.screenshot, "click", () => void this.captureScreenshot());
     on(this.controls.elements.chapter, "click", () => {
       this.chapter.addCurrentTime();
       this.state.chapters = this.chapter.getChapters();
@@ -277,15 +274,8 @@ export class VideoViewer {
       setIconButton(this.subtitlePanel.elements.toggle, visible ? "eye-slash" : "eye", visible ? "非表示" : "表示");
     });
 
-    on(this.screenshotPanel.elements.capture, "click", () => {
-      const format = `image/${this.state.settings.screenshotFormat}`;
-      void this.screenshot.capture(this.currentName, format, this.state.settings.screenshotQuality);
-    });
-    on(
-      this.screenshotPanel.elements.copy,
-      "click",
-      () => void this.screenshot.copyToClipboard().then(() => this.showStatus("フレームをコピーしました")),
-    );
+    on(this.screenshotPanel.elements.capture, "click", () => void this.captureScreenshot());
+    on(this.screenshotPanel.elements.copy, "click", () => void this.copyScreenshot());
 
     on(this.filterPanel.elements.brightness, "input", () => this.filter.setBrightness(Number(this.filterPanel.elements.brightness.value)));
     on(this.filterPanel.elements.contrast, "input", () => this.filter.setContrast(Number(this.filterPanel.elements.contrast.value)));
@@ -467,6 +457,10 @@ export class VideoViewer {
   private loadUrl(url: string, name: string): void {
     this.currentName = name;
     this.applyOpenPlaybackBehaviorOnLoad();
+    if (this.currentObjectUrl) {
+      URL.revokeObjectURL(this.currentObjectUrl);
+      this.currentObjectUrl = null;
+    }
     this.ui.video.src = url;
     this.ui.video.load();
     this.ui.root.classList.remove("is-empty");
@@ -560,6 +554,17 @@ export class VideoViewer {
     }
   }
 
+  private async captureScreenshot(): Promise<void> {
+    const format = `image/${this.state.settings.screenshotFormat}`;
+    const success = await this.screenshot.capture(this.currentName, format, this.state.settings.screenshotQuality);
+    this.showStatus(success ? "スクリーンショットを保存しました" : "この動画はスクリーンショットを保存できません");
+  }
+
+  private async copyScreenshot(): Promise<void> {
+    const success = await this.screenshot.copyToClipboard();
+    this.showStatus(success ? "フレームをコピーしました" : "この動画はクリップボードにコピーできません");
+  }
+
   private isCreateGroupOverflowing(): boolean {
     const element = this.controls.root.querySelector<HTMLElement>(".lvl-create-group");
     if (!element) return false;
@@ -569,8 +574,7 @@ export class VideoViewer {
   private handleMoreAction(action: string): void {
     switch (action) {
       case "screenshot": {
-        const format = `image/${this.state.settings.screenshotFormat}`;
-        void this.screenshot.capture(this.currentName, format, this.state.settings.screenshotQuality);
+        void this.captureScreenshot();
         break;
       }
       case "chapter":
