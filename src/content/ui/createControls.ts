@@ -128,8 +128,13 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
         ]),
       ]),
     ]),
-    el("div", { class: "lvl-control-group lvl-audio-group" }, [rate, volume, mute, pip]),
-    el("div", { class: "lvl-control-group lvl-fullscreen-group" }, [fullscreen]),
+    el("div", { class: "lvl-control-group lvl-audio-group" }, [
+      rate,
+      volume,
+      mute,
+      pip,
+      fullscreen,
+    ]),
   ]);
   return {
     root,
@@ -159,7 +164,13 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
 function cloneMenuButton(icon: string, label: string, action: string): HTMLButtonElement {
   return el(
     "button",
-    { class: "lvl-more-item", type: "button", "data-action": action, role: "menuitem" },
+    {
+      class: "lvl-more-item",
+      type: "button",
+      "data-action": action,
+      "data-more-action": action,
+      role: "menuitem",
+    },
     [el("i", { class: `bi bi-${icon}`, "aria-hidden": "true" }), el("span", {}, [label])],
   ) as HTMLButtonElement;
 }

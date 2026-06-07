@@ -56,6 +56,7 @@ export class VideoViewer {
   private currentObjectUrl: string | null = null;
   private currentName = "video";
   private statusTimer = 0;
+  private controlResizeObserver: ResizeObserver | null = null;
   private dragSeek: {
     pointerId: number;
     startX: number;
@@ -97,9 +98,11 @@ export class VideoViewer {
       this.filterPanel.root,
     );
     this.ui.root.classList.add("is-empty");
+    this.ui.root.dataset.createMode = "full";
     this.bindUi();
     this.bindShortcuts();
     this.shortcut.bind();
+    this.bindControlLayout();
 
     if (
       this.options.sourceUrl &&
@@ -113,6 +116,7 @@ export class VideoViewer {
   destroy(): void {
     for (const fn of this.cleanup.splice(0)) fn();
     this.shortcut.destroy();
+    this.controlResizeObserver?.disconnect();
     this.loop.destroy();
     this.skip.destroy();
     this.subtitle.destroy();
@@ -187,11 +191,33 @@ export class VideoViewer {
     on(this.controls.elements.tools, "click", () => {
       this.ui.root.classList.toggle("is-side-pinned");
       this.syncSidePinUi();
+      this.updateCreateMode();
     });
-    this.controls.root.addEventListener("click", (event) => {
+    on(this.controls.elements.more, "click", (event) => {
+      event.stopPropagation();
+      this.controls.elements.more
+        .closest<HTMLElement>(".lvl-more-wrap")
+        ?.classList.toggle("is-more-open");
+    });
+    const onMoreAction = (event: MouseEvent) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action]");
       if (!button) return;
       this.handleMoreAction(button.dataset.action ?? "");
+      button.closest<HTMLElement>(".lvl-more-wrap")?.classList.remove("is-more-open");
+    };
+    this.controls.root.addEventListener("click", onMoreAction);
+    this.cleanup.push(() => this.controls.root.removeEventListener("click", onMoreAction));
+    const closeMoreMenu = (event: MouseEvent) => {
+      const moreWrap = this.controls.elements.more.closest<HTMLElement>(".lvl-more-wrap");
+      if (!moreWrap || moreWrap.contains(event.target as Node)) return;
+      moreWrap.classList.remove("is-more-open");
+    };
+    document.addEventListener("click", closeMoreMenu);
+    this.cleanup.push(() => {
+      document.removeEventListener("click", closeMoreMenu);
+      this.controls.elements.more
+        .closest<HTMLElement>(".lvl-more-wrap")
+        ?.classList.remove("is-more-open");
     });
     on(this.controls.elements.rate, "change", () =>
       this.controller.setRate(Number(this.controls.elements.rate.value)),
@@ -222,11 +248,13 @@ export class VideoViewer {
     });
     on(this.ui.sidePin, "click", () => {
       this.toggleSidePin();
+      this.updateCreateMode();
     });
     on(this.ui.sideClose, "click", () => {
       this.ui.root.classList.remove("is-side-pinned");
       this.ui.root.classList.add("is-side-suppressed");
       this.syncSidePinUi();
+      this.updateCreateMode();
     });
 
     on(this.loopPanel.elements.setStart, "click", () => {
@@ -401,6 +429,13 @@ export class VideoViewer {
     this.ui.videoStage.addEventListener("pointercancel", finish);
   }
 
+  private bindControlLayout(): void {
+    const update = () => this.updateCreateMode();
+    this.controlResizeObserver = new ResizeObserver(update);
+    this.controlResizeObserver.observe(this.ui.controls);
+    requestAnimationFrame(update);
+  }
+
   private bindShortcuts(): void {
     this.shortcut.register({
       key: " ",
@@ -521,6 +556,22 @@ export class VideoViewer {
   private toggleSidePin(): void {
     this.ui.root.classList.toggle("is-side-pinned");
     this.syncSidePinUi();
+    this.updateCreateMode();
+  }
+
+  private updateCreateMode(): void {
+    const modes = ["full", "compact", "more"] as const;
+
+    for (const mode of modes) {
+      this.ui.root.dataset.createMode = mode;
+      if (!this.isCreateGroupOverflowing()) return;
+    }
+  }
+
+  private isCreateGroupOverflowing(): boolean {
+    const element = this.controls.root.querySelector<HTMLElement>(".lvl-create-group");
+    if (!element) return false;
+    return element.scrollWidth > element.clientWidth + 1;
   }
 
   private handleMoreAction(action: string): void {
@@ -546,6 +597,7 @@ export class VideoViewer {
       case "tools":
         this.ui.root.classList.toggle("is-side-pinned");
         this.syncSidePinUi();
+        this.updateCreateMode();
         break;
     }
   }
@@ -574,6 +626,7 @@ export class VideoViewer {
       ? `${formatTime(loop.start)} - ${formatTime(loop.end)}`
       : "ループ未設定";
     this.controls.elements.loopSummary.classList.toggle("is-active", Boolean(loop));
+    this.updateCreateMode();
   }
 
   private renderChapterList(): void {
