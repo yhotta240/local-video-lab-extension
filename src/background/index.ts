@@ -1,6 +1,24 @@
 import { logInfo } from "../utils/logger";
 
-console.log("background script");
+const ENABLED_KEY = "localVideoLabEnabled";
+
+async function getEnabled(): Promise<boolean> {
+  const result = await chrome.storage.local.get({ [ENABLED_KEY]: true });
+  return Boolean(result[ENABLED_KEY]);
+}
+
+async function setBadge(enabled: boolean): Promise<void> {
+  await chrome.action.setBadgeText({ text: enabled ? "ON" : "OFF" });
+  await chrome.action.setBadgeBackgroundColor({ color: enabled ? "#198754" : "#6c757d" });
+}
+
+async function notifyActiveTab(enabled: boolean): Promise<void> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+  await chrome.tabs
+    .sendMessage(tab.id, { type: "LOCAL_VIDEO_LAB_TOGGLE", enabled })
+    .catch(() => undefined);
+}
 
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
@@ -11,4 +29,19 @@ chrome.runtime.onInstalled.addListener((details) => {
       "background",
     );
   }
+  void getEnabled().then(setBadge);
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  void getEnabled().then(setBadge);
+});
+
+chrome.action.onClicked.addListener(() => {
+  void (async () => {
+    const enabled = !(await getEnabled());
+    await chrome.storage.local.set({ [ENABLED_KEY]: enabled });
+    await setBadge(enabled);
+    await notifyActiveTab(enabled);
+    logInfo(`Local Video Lab: ${enabled ? "enabled" : "disabled"}`, "background");
+  })();
 });
