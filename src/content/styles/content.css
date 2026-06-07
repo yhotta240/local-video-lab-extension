@@ -566,7 +566,8 @@
   background: var(--lvl-panel-hover);
 }
 
-.lvl-root.is-side-pinned:has(.lvl-stage:hover) .lvl-side-toggle {
+.lvl-root.is-side-pinned:has(.lvl-stage:hover) .lvl-side-toggle,
+.lvl-root.is-pointer-idle:not(.is-empty):not(.is-dragging):not(.is-drag-seeking) .lvl-side-toggle {
   opacity: 0;
   pointer-events: none;
 }
