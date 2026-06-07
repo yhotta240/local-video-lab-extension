@@ -8,7 +8,7 @@ import { ScreenshotManager } from "../features/screenshot";
 import { ShortcutManager } from "../features/shortcut";
 import { SkipManager } from "../features/skip";
 import { SubtitleManager } from "../features/subtitle";
-import { formatFileSize, isVideoFile } from "../lib/file";
+import { formatFileSize, getFileExtension, isVideoFile } from "../lib/file";
 import { formatTime, parseTime } from "../lib/time";
 import { createChapterPanel } from "../ui/createChapterPanel";
 import { createControls } from "../ui/createControls";
@@ -19,7 +19,7 @@ import { createSettingsPanel } from "../ui/createSettingsPanel";
 import { createSkipPanel } from "../ui/createSkipPanel";
 import { createSubtitlePanel } from "../ui/createSubtitlePanel";
 import { updateTimeline } from "../ui/createTimeline";
-import { createToolbar } from "../ui/createToolbar";
+import { createToolbar, setToolbarVideoInfo, type ToolbarVideoInfo } from "../ui/createToolbar";
 import { createViewerRoot } from "../ui/createViewerRoot";
 import { VideoController } from "./VideoController";
 import { VideoState } from "./VideoState";
@@ -58,6 +58,21 @@ export class VideoViewer {
   private readonly originalDocumentBackground: string;
   private currentObjectUrl: string | null = null;
   private currentName = "video";
+  private currentSourceInfo: {
+    sourceType: string;
+    path: string;
+    size: string;
+    mimeType: string;
+    modifiedAt: string;
+    sourceUrl: string;
+  } = {
+    sourceType: "未選択",
+    path: "不明",
+    size: "不明",
+    mimeType: "不明",
+    modifiedAt: "不明",
+    sourceUrl: "不明",
+  };
   private statusTimer = 0;
   private pointerIdleTimer = 0;
   private controlResizeObserver: ResizeObserver | null = null;
@@ -312,6 +327,7 @@ export class VideoViewer {
       video.addEventListener(type, () => this.updatePlaybackUi());
     }
     video.addEventListener("loadedmetadata", () => this.updateLoopMarkers());
+    video.addEventListener("loadedmetadata", () => this.updateToolbarInfo());
   }
 
   private bindDrop(): void {
@@ -487,10 +503,18 @@ export class VideoViewer {
     this.currentName = file.name;
     this.applyOpenPlaybackBehaviorOnLoad();
     this.loadLoopOnLoad(file.name);
+    this.currentSourceInfo = {
+      sourceType: "ローカルファイル",
+      path: file.webkitRelativePath || "ブラウザ仕様により取得不可",
+      size: formatFileSize(file.size),
+      mimeType: file.type || "不明",
+      modifiedAt: file.lastModified > 0 ? new Date(file.lastModified).toLocaleString() : "不明",
+      sourceUrl: "Blob URL",
+    };
     this.ui.video.src = this.currentObjectUrl;
     this.ui.video.load();
     this.ui.root.classList.remove("is-empty");
-    this.toolbar.elements.info.textContent = `${file.name} · ${formatFileSize(file.size)} · ${file.type || "video"}`;
+    this.updateToolbarInfo();
     this.showStatus("動画を読み込みました");
   }
 
@@ -498,6 +522,14 @@ export class VideoViewer {
     this.currentName = name;
     this.applyOpenPlaybackBehaviorOnLoad();
     this.loadLoopOnLoad(name);
+    this.currentSourceInfo = {
+      sourceType: "ローカルファイル",
+      path: getReadableFilePath(url),
+      size: "不明",
+      mimeType: guessMimeType(name),
+      modifiedAt: "不明",
+      sourceUrl: url,
+    };
     if (this.currentObjectUrl) {
       URL.revokeObjectURL(this.currentObjectUrl);
       this.currentObjectUrl = null;
@@ -505,7 +537,30 @@ export class VideoViewer {
     this.ui.video.src = url;
     this.ui.video.load();
     this.ui.root.classList.remove("is-empty");
-    this.toolbar.elements.info.textContent = name;
+    this.updateToolbarInfo();
+  }
+
+  private updateToolbarInfo(): void {
+    const video = this.ui.video;
+    const duration = Number.isFinite(video.duration) && video.duration > 0 ? formatTime(video.duration) : "不明";
+    const width = video.videoWidth || 0;
+    const height = video.videoHeight || 0;
+    const data: ToolbarVideoInfo = {
+      title: this.currentName,
+      sourceType: this.currentSourceInfo.sourceType,
+      path: this.currentSourceInfo.path,
+      size: this.currentSourceInfo.size,
+      mimeType: this.currentSourceInfo.mimeType,
+      extension: getFileExtension(this.currentName) || "不明",
+      duration,
+      resolution: width > 0 && height > 0 ? `${width} x ${height}` : "不明",
+      aspectRatio: formatAspectRatio(width, height),
+      modifiedAt: this.currentSourceInfo.modifiedAt,
+      sourceUrl: this.currentSourceInfo.sourceUrl,
+    };
+    const summary = [data.title, data.size, data.duration, data.resolution].filter((value) => value && value !== "不明").join(" · ");
+    this.toolbar.elements.info.textContent = summary || data.title;
+    setToolbarVideoInfo(this.toolbar.elements.infoPopover, data);
   }
 
   private loadLoopOnLoad(name: string): void {
@@ -794,6 +849,57 @@ export function getFileNameFromLocation(): string {
 export function isProbablyVideoUrl(name: string): boolean {
   const lower = name.toLowerCase();
   return VIDEO_URL_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+function getReadableFilePath(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "file:") return url;
+    const pathname = decodeURIComponent(parsed.pathname);
+    const withoutLeadingSlash = pathname.match(/^\/[A-Za-z]:\//) ? pathname.slice(1) : pathname;
+    return withoutLeadingSlash.replace(/\//g, "\\");
+  } catch {
+    return url || "不明";
+  }
+}
+
+function guessMimeType(filename: string): string {
+  switch (getFileExtension(filename).toLowerCase()) {
+    case ".mp4":
+    case ".m4v":
+      return "video/mp4";
+    case ".webm":
+      return "video/webm";
+    case ".ogv":
+      return "video/ogg";
+    case ".mov":
+      return "video/quicktime";
+    case ".mkv":
+      return "video/x-matroska";
+    case ".avi":
+      return "video/x-msvideo";
+    case ".3gp":
+      return "video/3gpp";
+    default:
+      return "不明";
+  }
+}
+
+function formatAspectRatio(width: number, height: number): string {
+  if (width <= 0 || height <= 0) return "不明";
+  const divisor = gcd(width, height);
+  return `${width / divisor}:${height / divisor}`;
+}
+
+function gcd(a: number, b: number): number {
+  let x = Math.abs(a);
+  let y = Math.abs(b);
+  while (y > 0) {
+    const next = x % y;
+    x = y;
+    y = next;
+  }
+  return x || 1;
 }
 
 function setIconButton(button: HTMLButtonElement, iconName: string, label: string): void {
