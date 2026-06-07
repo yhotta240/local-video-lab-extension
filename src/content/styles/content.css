@@ -352,10 +352,51 @@
 }
 
 .lvl-timeline {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 18px;
   margin: 0;
   padding: 0;
+}
+
+.lvl-loop-handle {
+  position: absolute;
+  z-index: 3;
+  display: none;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.38);
+  transform: translate(-50%, -50%);
+  cursor: ew-resize;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.lvl-loop-handle-start {
+  background: #e5484d;
+}
+
+.lvl-loop-handle-start::before {
+  content: "A";
+}
+
+.lvl-loop-handle-end {
+  background: #2f81f7;
+}
+
+.lvl-loop-handle-end::before {
+  content: "B";
+}
+
+.lvl-root.is-loop-start-set .lvl-loop-handle-start,
+.lvl-root.is-loop-end-set .lvl-loop-handle-end {
+  display: block;
 }
 
 .lvl-rate {

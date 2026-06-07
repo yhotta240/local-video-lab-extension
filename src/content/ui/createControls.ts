@@ -17,6 +17,7 @@ export interface ControlElements {
   more: HTMLButtonElement;
   loopStart: HTMLButtonElement;
   loopEnd: HTMLButtonElement;
+  loopApply: HTMLButtonElement;
   loopClear: HTMLButtonElement;
   loopSummary: HTMLElement;
   timeLabel: HTMLElement;
@@ -78,14 +79,17 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
   ]) as HTMLButtonElement;
   const loopStart = el("button", { class: "btn lvl-mini-btn", type: "button", title: "ループ開始を現在時刻に設定" }, ["A"]) as HTMLButtonElement;
   const loopEnd = el("button", { class: "btn lvl-mini-btn", type: "button", title: "ループ終了を現在時刻に設定" }, ["B"]) as HTMLButtonElement;
-  const loopClear = el("button", { class: "btn lvl-icon-btn", type: "button", title: "ループ解除" }, [
+  const loopApply = el("button", { class: "btn lvl-icon-btn", type: "button", title: "A-Bループを開始" }, [
     el("i", { class: "bi bi-repeat", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
+  const loopClear = el("button", { class: "btn lvl-icon-btn", type: "button", title: "ループ解除" }, [
+    el("i", { class: "bi bi-x-circle", "aria-hidden": "true" }),
   ]) as HTMLButtonElement;
   const loopSummary = el("span", { class: "lvl-loop-summary" }, ["ループ未設定"]);
   const timeLabel = el("span", { class: "lvl-time" }, ["00:00 / 00:00"]);
   const root = el("div", { class: "lvl-controls-inner" }, [
     el("div", { class: "lvl-control-group lvl-playback-group" }, [play, back, forward, timeLabel]),
-    el("div", { class: "lvl-control-group lvl-loop-group" }, [loopStart, loopEnd, loopClear, loopSummary]),
+    el("div", { class: "lvl-control-group lvl-loop-group" }, [loopStart, loopEnd, loopApply, loopClear, loopSummary]),
     el("div", { class: "lvl-control-group lvl-create-group" }, [
       screenshot,
       chapter,
@@ -121,6 +125,7 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
       more,
       loopStart,
       loopEnd,
+      loopApply,
       loopClear,
       loopSummary,
       timeLabel,

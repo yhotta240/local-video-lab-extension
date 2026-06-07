@@ -7,6 +7,8 @@ export interface ViewerRootElements {
   video: HTMLVideoElement;
   dropZone: HTMLElement;
   controls: HTMLElement;
+  loopStartHandle: HTMLElement;
+  loopEndHandle: HTMLElement;
   sideToggle: HTMLButtonElement;
   sidePin: HTMLButtonElement;
   sideClose: HTMLButtonElement;
@@ -70,6 +72,18 @@ export function createViewerRoot(): ViewerRootElements {
     step: "0.01",
     value: "0",
   }) as HTMLInputElement;
+  const loopStartHandle = el("button", {
+    class: "lvl-loop-handle lvl-loop-handle-start",
+    type: "button",
+    title: "ループ開始位置を調整",
+    "aria-label": "ループ開始位置を調整",
+  });
+  const loopEndHandle = el("button", {
+    class: "lvl-loop-handle lvl-loop-handle-end",
+    type: "button",
+    title: "ループ終了位置を調整",
+    "aria-label": "ループ終了位置を調整",
+  });
   const timeLabel = el("span", { class: "lvl-time" }, ["00:00 / 00:00"]);
   const sidePanel = el("aside", { class: "lvl-side" });
   const status = el("div", { class: "lvl-status", role: "status" });
@@ -77,7 +91,7 @@ export function createViewerRoot(): ViewerRootElements {
 
   videoStage.append(video, dropZone);
   sidePanel.appendChild(sideHeader);
-  root.append(toolbar, videoStage, sideToggle, timeline, controls, sidePanel, status, dragHud);
+  root.append(toolbar, videoStage, sideToggle, controls, sidePanel, status, dragHud);
   return {
     root,
     toolbar,
@@ -85,6 +99,8 @@ export function createViewerRoot(): ViewerRootElements {
     video,
     dropZone,
     controls,
+    loopStartHandle,
+    loopEndHandle,
     sideToggle,
     sidePin,
     sideClose,

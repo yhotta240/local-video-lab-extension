@@ -92,6 +92,8 @@ export class VideoViewer {
     document.body.appendChild(this.ui.root);
     this.ui.toolbar.appendChild(this.toolbar.root);
     this.ui.controls.appendChild(this.ui.timeline);
+    this.ui.controls.appendChild(this.ui.loopStartHandle);
+    this.ui.controls.appendChild(this.ui.loopEndHandle);
     this.ui.controls.appendChild(this.controls.root);
     this.ui.sidePanel.append(
       this.settingsPanel.root,
@@ -159,17 +161,18 @@ export class VideoViewer {
     on(this.controls.elements.back, "click", () => this.controller.seekBackward(this.state.settings.seekStep));
     on(this.controls.elements.forward, "click", () => this.controller.seekForward(this.state.settings.seekStep));
     on(this.controls.elements.loopStart, "click", () => {
-      this.loopPanel.elements.start.value = formatTime(this.ui.video.currentTime);
-      this.controls.elements.loopSummary.textContent = `A ${formatTime(this.ui.video.currentTime)}`;
-      this.controls.elements.loopSummary.classList.remove("is-active");
+      this.setLoopPoint("start", this.ui.video.currentTime);
       this.showStatus(`ループ開始 ${formatTime(this.ui.video.currentTime)}`);
     });
     on(this.controls.elements.loopEnd, "click", () => {
-      this.loopPanel.elements.end.value = formatTime(this.ui.video.currentTime);
-      this.applyLoopFromInputs();
+      this.setLoopPoint("end", this.ui.video.currentTime);
+      this.showStatus(`ループ終了 ${formatTime(this.ui.video.currentTime)}`);
+    });
+    on(this.controls.elements.loopApply, "click", () => {
+      void this.applyLoopFromInputs();
     });
     on(this.controls.elements.loopClear, "click", () => {
-      this.clearLoop();
+      void this.clearLoop();
     });
     on(this.controls.elements.screenshot, "click", () => void this.captureScreenshot());
     on(this.controls.elements.chapter, "click", () => {
@@ -184,7 +187,7 @@ export class VideoViewer {
     on(this.controls.elements.tools, "click", () => {
       this.ui.root.classList.toggle("is-side-pinned");
       this.syncSidePinUi();
-      this.updateCreateMode();
+      this.updateControlLayout();
     });
     on(this.controls.elements.more, "click", (event) => {
       event.stopPropagation();
@@ -228,26 +231,25 @@ export class VideoViewer {
     });
     on(this.ui.sidePin, "click", () => {
       this.toggleSidePin();
-      this.updateCreateMode();
     });
     on(this.ui.sideClose, "click", () => {
       this.ui.root.classList.remove("is-side-pinned");
       this.ui.root.classList.add("is-side-suppressed");
       this.syncSidePinUi();
-      this.updateCreateMode();
+      this.updateControlLayout();
     });
 
     on(this.loopPanel.elements.setStart, "click", () => {
-      this.loopPanel.elements.start.value = formatTime(this.ui.video.currentTime);
+      this.setLoopPoint("start", this.ui.video.currentTime);
     });
     on(this.loopPanel.elements.setEnd, "click", () => {
-      this.loopPanel.elements.end.value = formatTime(this.ui.video.currentTime);
+      this.setLoopPoint("end", this.ui.video.currentTime);
     });
     on(this.loopPanel.elements.apply, "click", () => {
-      this.applyLoopFromInputs();
+      void this.applyLoopFromInputs();
     });
     on(this.loopPanel.elements.clear, "click", () => {
-      this.clearLoop();
+      void this.clearLoop();
     });
 
     on(this.skipPanel.elements.add, "click", () => {
@@ -301,6 +303,7 @@ export class VideoViewer {
     this.bindVideoEvents();
     this.bindDrop();
     this.bindDragSeek();
+    this.bindLoopHandles();
   }
 
   private bindVideoEvents(): void {
@@ -308,6 +311,7 @@ export class VideoViewer {
     for (const type of ["loadedmetadata", "timeupdate", "play", "pause", "volumechange", "ratechange"] as const) {
       video.addEventListener(type, () => this.updatePlaybackUi());
     }
+    video.addEventListener("loadedmetadata", () => this.updateLoopMarkers());
   }
 
   private bindDrop(): void {
@@ -378,10 +382,45 @@ export class VideoViewer {
     this.ui.videoStage.addEventListener("pointercancel", finish);
   }
 
+  private bindLoopHandles(): void {
+    const bindHandle = (handle: HTMLElement, side: "start" | "end") => {
+      const startDrag = (event: PointerEvent) => {
+        if (!this.hasLoopPoint(side) || !Number.isFinite(this.ui.video.duration)) return;
+        event.preventDefault();
+        handle.setPointerCapture(event.pointerId);
+
+        const move = (moveEvent: PointerEvent) => {
+          const time = this.getTimelineTime(moveEvent.clientX);
+          this.updateLoopPoint(side, time);
+          this.updateLoopSummary();
+        };
+
+        const finish = () => {
+          handle.removeEventListener("pointermove", move);
+          handle.removeEventListener("pointerup", finish);
+          handle.removeEventListener("pointercancel", finish);
+          void this.saveLoop();
+        };
+
+        handle.addEventListener("pointermove", move);
+        handle.addEventListener("pointerup", finish);
+        handle.addEventListener("pointercancel", finish);
+      };
+
+      handle.addEventListener("pointerdown", startDrag);
+      this.cleanup.push(() => handle.removeEventListener("pointerdown", startDrag));
+    };
+
+    bindHandle(this.ui.loopStartHandle, "start");
+    bindHandle(this.ui.loopEndHandle, "end");
+  }
+
   private bindControlLayout(): void {
-    const update = () => this.updateCreateMode();
+    const update = () => this.updateControlLayout();
     this.controlResizeObserver = new ResizeObserver(update);
     this.controlResizeObserver.observe(this.ui.controls);
+    this.controlResizeObserver.observe(this.controls.root);
+    this.controlResizeObserver.observe(this.ui.timeline);
     requestAnimationFrame(update);
   }
 
@@ -447,6 +486,7 @@ export class VideoViewer {
     this.currentObjectUrl = URL.createObjectURL(file);
     this.currentName = file.name;
     this.applyOpenPlaybackBehaviorOnLoad();
+    this.loadLoopOnLoad(file.name);
     this.ui.video.src = this.currentObjectUrl;
     this.ui.video.load();
     this.ui.root.classList.remove("is-empty");
@@ -457,6 +497,7 @@ export class VideoViewer {
   private loadUrl(url: string, name: string): void {
     this.currentName = name;
     this.applyOpenPlaybackBehaviorOnLoad();
+    this.loadLoopOnLoad(name);
     if (this.currentObjectUrl) {
       URL.revokeObjectURL(this.currentObjectUrl);
       this.currentObjectUrl = null;
@@ -465,6 +506,24 @@ export class VideoViewer {
     this.ui.video.load();
     this.ui.root.classList.remove("is-empty");
     this.toolbar.elements.info.textContent = name;
+  }
+
+  private loadLoopOnLoad(name: string): void {
+    this.loop.clearLoop();
+    this.state.loop = null;
+    this.syncLoopInputs();
+    this.updateLoopSummary();
+    this.ui.video.addEventListener(
+      "loadedmetadata",
+      () => {
+        void this.loop.load(name).then((loop) => {
+          this.state.loop = loop;
+          this.syncLoopInputs();
+          this.updateLoopSummary();
+        });
+      },
+      { once: true },
+    );
   }
 
   private applyOpenPlaybackBehaviorOnLoad(): void {
@@ -518,7 +577,7 @@ export class VideoViewer {
     }
   }
 
-  private applyLoopFromInputs(): void {
+  private async applyLoopFromInputs(): Promise<void> {
     const start = parseTime(this.loopPanel.elements.start.value);
     const end = parseTime(this.loopPanel.elements.end.value);
     if (end <= start) {
@@ -527,22 +586,24 @@ export class VideoViewer {
     }
     this.state.loop = this.loop.setLoop(start, end);
     this.updateLoopSummary();
+    await this.saveLoop();
     this.showStatus(`A-Bループ ${formatTime(start)} - ${formatTime(end)}`);
   }
 
-  private clearLoop(): void {
+  private async clearLoop(): Promise<void> {
     this.loop.clearLoop();
     this.state.loop = null;
     this.loopPanel.elements.start.value = "";
     this.loopPanel.elements.end.value = "";
     this.updateLoopSummary();
+    await this.loop.removeSaved(this.currentName).catch(() => undefined);
     this.showStatus("A-Bループを解除しました");
   }
 
   private toggleSidePin(): void {
     this.ui.root.classList.toggle("is-side-pinned");
     this.syncSidePinUi();
-    this.updateCreateMode();
+    this.updateControlLayout();
   }
 
   private updateCreateMode(): void {
@@ -552,6 +613,92 @@ export class VideoViewer {
       this.ui.root.dataset.createMode = mode;
       if (!this.isCreateGroupOverflowing()) return;
     }
+  }
+
+  private getTimelineTime(clientX: number): number {
+    const duration = this.ui.video.duration || 0;
+    const rect = this.ui.timeline.getBoundingClientRect();
+    const ratio = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
+    return Math.max(0, Math.min(duration, ratio * duration));
+  }
+
+  private hasLoopPoint(side: "start" | "end"): boolean {
+    if (this.state.loop) return true;
+    const input = side === "start" ? this.loopPanel.elements.start : this.loopPanel.elements.end;
+    return input.value.trim().length > 0;
+  }
+
+  private setLoopPoint(side: "start" | "end", time: number): void {
+    this.updateLoopPoint(side, time);
+    this.updateLoopSummary();
+    if (this.state.loop) void this.saveLoop();
+  }
+
+  private updateLoopPoint(side: "start" | "end", time: number): void {
+    const duration = this.ui.video.duration || 0;
+    const minGap = 0.05;
+    const clampTime = (value: number) => Math.max(0, Math.min(duration, value));
+    const currentStart = this.state.loop?.start ?? parseTime(this.loopPanel.elements.start.value);
+    const currentEnd = this.state.loop?.end ?? parseTime(this.loopPanel.elements.end.value);
+    const hasStart = Boolean(this.state.loop || this.loopPanel.elements.start.value.trim());
+    const hasEnd = Boolean(this.state.loop || this.loopPanel.elements.end.value.trim());
+    let start = hasStart ? clampTime(currentStart) : 0;
+    let end = hasEnd ? clampTime(currentEnd) : 0;
+
+    if (side === "start") {
+      start = hasEnd ? Math.min(clampTime(time), Math.max(0, end - minGap)) : clampTime(time);
+    } else {
+      end = hasStart ? Math.max(clampTime(time), Math.min(duration, start + minGap)) : clampTime(time);
+    }
+
+    if (side === "start" || hasStart) this.loopPanel.elements.start.value = formatTime(start);
+    if (side === "end" || hasEnd) this.loopPanel.elements.end.value = formatTime(end);
+    if (this.state.loop) {
+      this.state.loop = this.loop.updateLoop(start, end);
+    }
+  }
+
+  private updateControlLayout(): void {
+    this.updateCreateMode();
+    this.updateLoopMarkers();
+  }
+
+  private syncLoopInputs(): void {
+    if (!this.state.loop) {
+      this.loopPanel.elements.start.value = "";
+      this.loopPanel.elements.end.value = "";
+      return;
+    }
+    this.loopPanel.elements.start.value = formatTime(this.state.loop.start);
+    this.loopPanel.elements.end.value = formatTime(this.state.loop.end);
+  }
+
+  private updateLoopMarkers(): void {
+    const duration = this.ui.video.duration || 0;
+    const startInput = this.loopPanel.elements.start.value.trim();
+    const endInput = this.loopPanel.elements.end.value.trim();
+    const start = this.state.loop?.start ?? parseTime(startInput);
+    const end = this.state.loop?.end ?? parseTime(endInput);
+    const hasStart = Boolean(this.state.loop || startInput) && duration > 0;
+    const hasEnd = Boolean(this.state.loop || endInput) && duration > 0;
+    this.ui.root.classList.toggle("is-loop-start-set", hasStart);
+    this.ui.root.classList.toggle("is-loop-end-set", hasEnd);
+
+    if (hasStart) this.positionLoopHandle(this.ui.loopStartHandle, start, duration);
+    if (hasEnd) this.positionLoopHandle(this.ui.loopEndHandle, end, duration);
+  }
+
+  private positionLoopHandle(handle: HTMLElement, time: number, duration: number): void {
+    const timelineRect = this.ui.timeline.getBoundingClientRect();
+    const controlsRect = this.ui.controls.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, time / duration));
+    handle.style.left = `${timelineRect.left - controlsRect.left + timelineRect.width * ratio}px`;
+    handle.style.top = `${timelineRect.top - controlsRect.top + timelineRect.height / 2}px`;
+  }
+
+  private async saveLoop(): Promise<void> {
+    if (!this.state.loop) return;
+    await this.loop.save(this.currentName).catch(() => undefined);
   }
 
   private async captureScreenshot(): Promise<void> {
@@ -589,7 +736,7 @@ export class VideoViewer {
       case "tools":
         this.ui.root.classList.toggle("is-side-pinned");
         this.syncSidePinUi();
-        this.updateCreateMode();
+        this.updateControlLayout();
         break;
     }
   }
@@ -608,9 +755,15 @@ export class VideoViewer {
 
   private updateLoopSummary(): void {
     const loop = this.state.loop;
-    this.controls.elements.loopSummary.textContent = loop ? `${formatTime(loop.start)} - ${formatTime(loop.end)}` : "ループ未設定";
+    const startInput = this.loopPanel.elements.start.value.trim();
+    const endInput = this.loopPanel.elements.end.value.trim();
+    this.controls.elements.loopSummary.textContent = loop
+      ? `${formatTime(loop.start)} - ${formatTime(loop.end)}`
+      : startInput || endInput
+        ? `A-B ${startInput || "未設定"} - ${endInput || "未設定"}`
+        : "ループ未設定";
     this.controls.elements.loopSummary.classList.toggle("is-active", Boolean(loop));
-    this.updateCreateMode();
+    this.updateControlLayout();
   }
 
   private renderChapterList(): void {
