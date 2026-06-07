@@ -50,12 +50,26 @@ export class VideoViewer {
   private readonly chapter: ChapterManager;
   private readonly shortcut = new ShortcutManager();
   private cleanup: (() => void)[] = [];
+  private readonly originalBodyMargin: string;
+  private readonly originalBodyOverflow: string;
+  private readonly originalDocumentBackground: string;
   private currentObjectUrl: string | null = null;
   private currentName = "video";
   private statusTimer = 0;
+  private dragSeek: {
+    pointerId: number;
+    startX: number;
+    startTime: number;
+    targetTime: number;
+    frameId: number;
+    moved: boolean;
+  } | null = null;
 
   constructor(private readonly options: VideoViewerOptions = {}) {
     this.originalHtml = document.body.innerHTML;
+    this.originalBodyMargin = document.body.style.margin;
+    this.originalBodyOverflow = document.body.style.overflow;
+    this.originalDocumentBackground = document.documentElement.style.background;
     this.controller = new VideoController(this.ui.video);
     this.loop = new LoopManager(this.ui.video);
     this.skip = new SkipManager(this.ui.video);
@@ -67,12 +81,13 @@ export class VideoViewer {
 
   mount(): void {
     document.body.innerHTML = "";
-    document.documentElement.style.background = "#111418";
+    document.documentElement.style.background = "#090a0d";
     document.body.style.margin = "0";
+    document.body.style.overflow = "hidden";
     document.body.appendChild(this.ui.root);
     this.ui.toolbar.appendChild(this.toolbar.root);
+    this.ui.controls.appendChild(this.ui.timeline);
     this.ui.controls.appendChild(this.controls.root);
-    this.ui.controls.appendChild(this.controls.elements.timeLabel);
     this.ui.sidePanel.append(
       this.loopPanel.root,
       this.skipPanel.root,
@@ -104,6 +119,9 @@ export class VideoViewer {
     this.chapter.destroy();
     if (this.currentObjectUrl) URL.revokeObjectURL(this.currentObjectUrl);
     document.body.innerHTML = this.originalHtml;
+    document.body.style.margin = this.originalBodyMargin;
+    document.body.style.overflow = this.originalBodyOverflow;
+    document.documentElement.style.background = this.originalDocumentBackground;
   }
 
   private bindUi(): void {
@@ -140,6 +158,36 @@ export class VideoViewer {
     on(this.controls.elements.forward, "click", () =>
       this.controller.seekForward(this.state.settings.seekStep),
     );
+    on(this.controls.elements.loopStart, "click", () => {
+      this.loopPanel.elements.start.value = formatTime(this.ui.video.currentTime);
+      this.controls.elements.loopSummary.textContent = `A ${formatTime(this.ui.video.currentTime)}`;
+      this.controls.elements.loopSummary.classList.remove("is-active");
+      this.showStatus(`ループ開始 ${formatTime(this.ui.video.currentTime)}`);
+    });
+    on(this.controls.elements.loopEnd, "click", () => {
+      this.loopPanel.elements.end.value = formatTime(this.ui.video.currentTime);
+      this.applyLoopFromInputs();
+    });
+    on(this.controls.elements.loopClear, "click", () => {
+      this.clearLoop();
+    });
+    on(this.controls.elements.screenshot, "click", () => {
+      const format = `image/${this.state.settings.screenshotFormat}`;
+      void this.screenshot.capture(this.currentName, format, this.state.settings.screenshotQuality);
+    });
+    on(this.controls.elements.chapter, "click", () => {
+      this.chapter.addCurrentTime();
+      this.state.chapters = this.chapter.getChapters();
+      this.renderChapterList();
+      this.showStatus("チャプターを追加しました");
+    });
+    on(this.controls.elements.subtitles, "click", () => {
+      this.toolbar.elements.subtitleInput.click();
+    });
+    on(this.controls.elements.tools, "click", () => {
+      this.ui.root.classList.toggle("is-side-pinned");
+      this.syncSidePinUi();
+    });
     on(this.controls.elements.rate, "change", () =>
       this.controller.setRate(Number(this.controls.elements.rate.value)),
     );
@@ -162,6 +210,16 @@ export class VideoViewer {
       () => void this.controller.toggleFullscreen(this.ui.root),
     );
     on(this.ui.timeline, "input", () => this.controller.seekTo(Number(this.ui.timeline.value)));
+    on(this.ui.sideToggle, "click", () => {
+      this.toggleSidePin();
+    });
+    on(this.ui.sidePin, "click", () => {
+      this.toggleSidePin();
+    });
+    on(this.ui.sideClose, "click", () => {
+      this.ui.root.classList.remove("is-side-pinned");
+      this.syncSidePinUi();
+    });
 
     on(this.loopPanel.elements.setStart, "click", () => {
       this.loopPanel.elements.start.value = formatTime(this.ui.video.currentTime);
@@ -170,19 +228,10 @@ export class VideoViewer {
       this.loopPanel.elements.end.value = formatTime(this.ui.video.currentTime);
     });
     on(this.loopPanel.elements.apply, "click", () => {
-      const start = parseTime(this.loopPanel.elements.start.value);
-      const end = parseTime(this.loopPanel.elements.end.value);
-      if (end <= start) {
-        this.showStatus("ループ終了時刻は開始時刻より後にしてください");
-        return;
-      }
-      this.state.loop = this.loop.setLoop(start, end);
-      this.showStatus(`A-Bループ ${formatTime(start)} - ${formatTime(end)}`);
+      this.applyLoopFromInputs();
     });
     on(this.loopPanel.elements.clear, "click", () => {
-      this.loop.clearLoop();
-      this.state.loop = null;
-      this.showStatus("A-Bループを解除しました");
+      this.clearLoop();
     });
 
     on(this.skipPanel.elements.add, "click", () => {
@@ -206,7 +255,11 @@ export class VideoViewer {
 
     on(this.subtitlePanel.elements.toggle, "click", () => {
       const visible = this.subtitle.toggleVisibility();
-      this.subtitlePanel.elements.toggle.textContent = visible ? "Hide" : "Show";
+      setIconButton(
+        this.subtitlePanel.elements.toggle,
+        visible ? "eye-slash" : "eye",
+        visible ? "非表示" : "表示",
+      );
     });
 
     on(this.screenshotPanel.elements.capture, "click", () => {
@@ -252,6 +305,7 @@ export class VideoViewer {
 
     this.bindVideoEvents();
     this.bindDrop();
+    this.bindDragSeek();
   }
 
   private bindVideoEvents(): void {
@@ -285,6 +339,58 @@ export class VideoViewer {
       }
       this.loadFile(file);
     });
+  }
+
+  private bindDragSeek(): void {
+    this.ui.videoStage.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || !Number.isFinite(this.ui.video.duration)) return;
+      this.dragSeek = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startTime: this.ui.video.currentTime,
+        targetTime: this.ui.video.currentTime,
+        frameId: 0,
+        moved: false,
+      };
+      this.ui.videoStage.setPointerCapture(event.pointerId);
+      this.ui.root.classList.add("is-drag-seeking");
+    });
+
+    this.ui.videoStage.addEventListener("pointermove", (event) => {
+      if (!this.dragSeek || event.pointerId !== this.dragSeek.pointerId) return;
+      const secondsPerPixel = Math.max(0.05, Math.min(0.2, (this.ui.video.duration || 0) / 36000));
+      const delta = (event.clientX - this.dragSeek.startX) * secondsPerPixel;
+      const nextTime = Math.max(
+        0,
+        Math.min(this.ui.video.duration || 0, this.dragSeek.startTime + delta),
+      );
+      this.dragSeek.targetTime = nextTime;
+      this.dragSeek.moved = Math.abs(event.clientX - this.dragSeek.startX) > 4;
+      this.ui.dragHud.textContent = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}s  ${formatTime(nextTime)}`;
+      if (this.dragSeek.frameId === 0) {
+        this.dragSeek.frameId = window.requestAnimationFrame(() => {
+          if (!this.dragSeek) return;
+          this.ui.video.currentTime = this.dragSeek.targetTime;
+          this.dragSeek.frameId = 0;
+        });
+      }
+    });
+
+    const finish = (event: PointerEvent) => {
+      if (!this.dragSeek || event.pointerId !== this.dragSeek.pointerId) return;
+      this.ui.videoStage.releasePointerCapture(event.pointerId);
+      const shouldTogglePlay = !this.dragSeek.moved;
+      if (this.dragSeek.frameId !== 0) {
+        window.cancelAnimationFrame(this.dragSeek.frameId);
+        this.ui.video.currentTime = this.dragSeek.targetTime;
+      }
+      this.dragSeek = null;
+      this.ui.root.classList.remove("is-drag-seeking");
+      if (shouldTogglePlay) this.controller.togglePlay();
+    };
+
+    this.ui.videoStage.addEventListener("pointerup", finish);
+    this.ui.videoStage.addEventListener("pointercancel", finish);
   }
 
   private bindShortcuts(): void {
@@ -344,8 +450,16 @@ export class VideoViewer {
       volume: video.volume,
       muted: video.muted,
     };
-    this.controls.elements.play.textContent = video.paused ? "Play" : "Pause";
-    this.controls.elements.mute.textContent = video.muted ? "Unmute" : "Mute";
+    setIconButton(
+      this.controls.elements.play,
+      video.paused ? "play-fill" : "pause-fill",
+      video.paused ? "再生" : "一時停止",
+    );
+    setIconButton(
+      this.controls.elements.mute,
+      video.muted ? "volume-mute" : "volume-up",
+      video.muted ? "ミュート解除" : "ミュート",
+    );
     this.controls.elements.volume.value = String(video.volume);
     this.controls.elements.rate.value = String(video.playbackRate);
     updateTimeline(
@@ -363,9 +477,9 @@ export class VideoViewer {
       item.className = "lvl-list-item";
       item.textContent = `${formatTime(range.start)} - ${formatTime(range.end)}`;
       const remove = document.createElement("button");
-      remove.className = "btn btn-sm btn-outline-light";
+      remove.className = "btn lvl-icon-btn lvl-danger-btn";
       remove.type = "button";
-      remove.textContent = "Remove";
+      setIconButton(remove, "trash3", "削除");
       remove.addEventListener("click", () => {
         this.skip.removeRange(range.id);
         this.renderSkipList();
@@ -373,6 +487,46 @@ export class VideoViewer {
       item.appendChild(remove);
       this.skipPanel.elements.list.appendChild(item);
     }
+  }
+
+  private applyLoopFromInputs(): void {
+    const start = parseTime(this.loopPanel.elements.start.value);
+    const end = parseTime(this.loopPanel.elements.end.value);
+    if (end <= start) {
+      this.showStatus("先にAを設定してから、後ろの位置でBを押してください");
+      return;
+    }
+    this.state.loop = this.loop.setLoop(start, end);
+    this.updateLoopSummary();
+    this.showStatus(`A-Bループ ${formatTime(start)} - ${formatTime(end)}`);
+  }
+
+  private clearLoop(): void {
+    this.loop.clearLoop();
+    this.state.loop = null;
+    this.loopPanel.elements.start.value = "";
+    this.loopPanel.elements.end.value = "";
+    this.updateLoopSummary();
+    this.showStatus("A-Bループを解除しました");
+  }
+
+  private toggleSidePin(): void {
+    this.ui.root.classList.toggle("is-side-pinned");
+    this.syncSidePinUi();
+  }
+
+  private syncSidePinUi(): void {
+    const pinned = this.ui.root.classList.contains("is-side-pinned");
+    this.ui.sideToggle.setAttribute("aria-label", pinned ? "ツール固定を解除" : "ツールを固定");
+    this.ui.sideToggle.title = pinned ? "ツール固定を解除" : "ツールを固定";
+  }
+
+  private updateLoopSummary(): void {
+    const loop = this.state.loop;
+    this.controls.elements.loopSummary.textContent = loop
+      ? `${formatTime(loop.start)} - ${formatTime(loop.end)}`
+      : "ループ未設定";
+    this.controls.elements.loopSummary.classList.toggle("is-active", Boolean(loop));
   }
 
   private renderChapterList(): void {
@@ -403,4 +557,13 @@ export function getFileNameFromLocation(): string {
 export function isProbablyVideoUrl(name: string): boolean {
   const lower = name.toLowerCase();
   return VIDEO_URL_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+function setIconButton(button: HTMLButtonElement, iconName: string, label: string): void {
+  const icon = document.createElement("i");
+  icon.className = `bi bi-${iconName}`;
+  icon.setAttribute("aria-hidden", "true");
+  button.replaceChildren(icon);
+  button.setAttribute("aria-label", label);
+  button.title = label;
 }

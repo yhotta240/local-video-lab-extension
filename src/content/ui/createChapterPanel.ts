@@ -1,4 +1,5 @@
 import { el } from "../lib/dom";
+import { iconLabel } from "./icon";
 
 export interface ChapterPanelElements {
   title: HTMLInputElement;
@@ -9,14 +10,16 @@ export interface ChapterPanelElements {
 export function createChapterPanel(): { root: HTMLElement; elements: ChapterPanelElements } {
   const title = el("input", {
     class: "form-control form-control-sm",
-    placeholder: "Chapter title",
+    placeholder: "チャプター名",
   }) as HTMLInputElement;
-  const add = el("button", { class: "btn btn-sm btn-primary", type: "button" }, [
-    "Add",
-  ]) as HTMLButtonElement;
+  const add = el(
+    "button",
+    { class: "btn lvl-action-btn lvl-primary-btn", type: "button" },
+    iconLabel("bookmark-plus", "追加"),
+  ) as HTMLButtonElement;
   const list = el("div", { class: "lvl-list" });
   const root = el("section", { class: "lvl-panel" }, [
-    el("h2", {}, ["Chapters"]),
+    el("h2", {}, [el("i", { class: "bi bi-bookmarks", "aria-hidden": "true" }), "チャプター"]),
     el("div", { class: "lvl-row" }, [title, add]),
     list,
   ]);
