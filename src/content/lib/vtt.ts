@@ -53,9 +53,7 @@ export function parseVTT(text: string): SubtitleCue[] {
 
     const timeLine = lines[timeLineIndex];
     // タイムスタンプ部分を抽出（位置設定は無視）
-    const timeMatch = timeLine.match(
-      /(\d{1,2}:?\d{2}:\d{2}[.,]\d{1,3})\s*-->\s*(\d{1,2}:?\d{2}:\d{2}[.,]\d{1,3})/,
-    );
+    const timeMatch = timeLine.match(/(\d{1,2}:?\d{2}:\d{2}[.,]\d{1,3})\s*-->\s*(\d{1,2}:?\d{2}:\d{2}[.,]\d{1,3})/);
     if (!timeMatch) continue;
 
     const startTime = parseVttTimestamp(timeMatch[1].replace(",", "."));

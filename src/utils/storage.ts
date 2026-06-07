@@ -18,9 +18,7 @@ export async function setEnabled(enabled: boolean): Promise<void> {
   await setStorage({ enabled });
 }
 
-export function getStorage<T extends Record<string, unknown>>(
-  keys: string | string[],
-): Promise<Partial<T>> {
+export function getStorage<T extends Record<string, unknown>>(keys: string | string[]): Promise<Partial<T>> {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get(keys, (result) => {
       if (chrome.runtime.lastError) {

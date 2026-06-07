@@ -1,9 +1,5 @@
 /** 動画の現在フレームをキャプチャしてBlobを返す */
-export async function captureFrame(
-  video: HTMLVideoElement,
-  format = "image/png",
-  quality = 0.92,
-): Promise<Blob | null> {
+export async function captureFrame(video: HTMLVideoElement, format = "image/png", quality = 0.92): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;

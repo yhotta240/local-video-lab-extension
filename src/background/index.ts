@@ -15,9 +15,7 @@ async function setBadge(enabled: boolean): Promise<void> {
 async function notifyActiveTab(enabled: boolean): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
-  await chrome.tabs
-    .sendMessage(tab.id, { type: "LOCAL_VIDEO_LAB_TOGGLE", enabled })
-    .catch(() => undefined);
+  await chrome.tabs.sendMessage(tab.id, { type: "LOCAL_VIDEO_LAB_TOGGLE", enabled }).catch(() => undefined);
 }
 
 async function toggleWindowFullscreen(): Promise<boolean> {
@@ -34,10 +32,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
     logInfo("拡張機能がインストールされました", "background");
   } else if (details.reason === "update") {
-    logInfo(
-      `拡張機能がアップデートされました (v${details.previousVersion ?? "?"} → v${chrome.runtime.getManifest().version})`,
-      "background",
-    );
+    logInfo(`拡張機能がアップデートされました (v${details.previousVersion ?? "?"} → v${chrome.runtime.getManifest().version})`, "background");
   }
   void getEnabled().then(setBadge);
 });

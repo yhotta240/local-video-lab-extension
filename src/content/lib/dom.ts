@@ -26,10 +26,7 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 /** querySelector のショートハンド */
-export function qs<T extends HTMLElement>(
-  selector: string,
-  parent: ParentNode = document,
-): T | null {
+export function qs<T extends HTMLElement>(selector: string, parent: ParentNode = document): T | null {
   return parent.querySelector<T>(selector);
 }
 

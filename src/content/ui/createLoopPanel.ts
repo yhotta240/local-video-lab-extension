@@ -19,26 +19,10 @@ export function createLoopPanel(): { root: HTMLElement; elements: LoopPanelEleme
     class: "form-control form-control-sm",
     placeholder: "終了",
   }) as HTMLInputElement;
-  const setStart = el(
-    "button",
-    { class: "btn lvl-icon-btn", type: "button", title: "開始を現在時刻に設定" },
-    ["A"],
-  ) as HTMLButtonElement;
-  const setEnd = el(
-    "button",
-    { class: "btn lvl-icon-btn", type: "button", title: "終了を現在時刻に設定" },
-    ["B"],
-  ) as HTMLButtonElement;
-  const apply = el(
-    "button",
-    { class: "btn lvl-action-btn lvl-primary-btn", type: "button" },
-    iconLabel("repeat", "ループ"),
-  ) as HTMLButtonElement;
-  const clear = el(
-    "button",
-    { class: "btn lvl-action-btn", type: "button" },
-    iconLabel("x-circle", "解除"),
-  ) as HTMLButtonElement;
+  const setStart = el("button", { class: "btn lvl-icon-btn", type: "button", title: "開始を現在時刻に設定" }, ["A"]) as HTMLButtonElement;
+  const setEnd = el("button", { class: "btn lvl-icon-btn", type: "button", title: "終了を現在時刻に設定" }, ["B"]) as HTMLButtonElement;
+  const apply = el("button", { class: "btn lvl-action-btn lvl-primary-btn", type: "button" }, iconLabel("repeat", "ループ")) as HTMLButtonElement;
+  const clear = el("button", { class: "btn lvl-action-btn", type: "button" }, iconLabel("x-circle", "解除")) as HTMLButtonElement;
   const root = el("section", { class: "lvl-panel" }, [
     el("h2", {}, [el("i", { class: "bi bi-repeat", "aria-hidden": "true" }), "A-Bループ"]),
     el("div", { class: "lvl-row" }, [start, setStart]),

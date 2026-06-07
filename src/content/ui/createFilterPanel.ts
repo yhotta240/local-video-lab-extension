@@ -27,15 +27,10 @@ export function createFilterPanel(): { root: HTMLElement; elements: FilterPanelE
   const contrast = slider("コントラスト", "100");
   const saturate = slider("彩度", "100");
   const rotation = el("select", { class: "form-select form-select-sm" }) as HTMLSelectElement;
-  for (const value of [0, 90, 180, 270])
-    rotation.appendChild(el("option", { value: String(value) }, [`${value}deg`]));
+  for (const value of [0, 90, 180, 270]) rotation.appendChild(el("option", { value: String(value) }, [`${value}deg`]));
   const flipH = el("input", { class: "form-check-input", type: "checkbox" }) as HTMLInputElement;
   const flipV = el("input", { class: "form-check-input", type: "checkbox" }) as HTMLInputElement;
-  const reset = el(
-    "button",
-    { class: "btn lvl-action-btn", type: "button" },
-    iconLabel("arrow-counterclockwise", "リセット"),
-  ) as HTMLButtonElement;
+  const reset = el("button", { class: "btn lvl-action-btn", type: "button" }, iconLabel("arrow-counterclockwise", "リセット")) as HTMLButtonElement;
   const root = el("section", { class: "lvl-panel" }, [
     el("h2", {}, [el("i", { class: "bi bi-sliders", "aria-hidden": "true" }), "表示調整"]),
     brightness.row,

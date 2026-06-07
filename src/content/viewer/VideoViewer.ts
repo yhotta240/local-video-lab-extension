@@ -104,11 +104,7 @@ export class VideoViewer {
     this.shortcut.bind();
     this.bindControlLayout();
 
-    if (
-      this.options.sourceUrl &&
-      this.options.sourceName &&
-      isProbablyVideoUrl(this.options.sourceName)
-    ) {
+    if (this.options.sourceUrl && this.options.sourceName && isProbablyVideoUrl(this.options.sourceName)) {
       this.loadUrl(this.options.sourceUrl, this.options.sourceName);
     }
   }
@@ -129,11 +125,7 @@ export class VideoViewer {
   }
 
   private bindUi(): void {
-    const on = <K extends keyof HTMLElementEventMap>(
-      target: HTMLElement,
-      type: K,
-      listener: (event: HTMLElementEventMap[K]) => void,
-    ) => {
+    const on = <K extends keyof HTMLElementEventMap>(target: HTMLElement, type: K, listener: (event: HTMLElementEventMap[K]) => void) => {
       target.addEventListener(type, listener);
       this.cleanup.push(() => target.removeEventListener(type, listener));
     };
@@ -156,12 +148,8 @@ export class VideoViewer {
     });
 
     on(this.controls.elements.play, "click", () => this.controller.togglePlay());
-    on(this.controls.elements.back, "click", () =>
-      this.controller.seekBackward(this.state.settings.seekStep),
-    );
-    on(this.controls.elements.forward, "click", () =>
-      this.controller.seekForward(this.state.settings.seekStep),
-    );
+    on(this.controls.elements.back, "click", () => this.controller.seekBackward(this.state.settings.seekStep));
+    on(this.controls.elements.forward, "click", () => this.controller.seekForward(this.state.settings.seekStep));
     on(this.controls.elements.loopStart, "click", () => {
       this.loopPanel.elements.start.value = formatTime(this.ui.video.currentTime);
       this.controls.elements.loopSummary.textContent = `A ${formatTime(this.ui.video.currentTime)}`;
@@ -195,9 +183,7 @@ export class VideoViewer {
     });
     on(this.controls.elements.more, "click", (event) => {
       event.stopPropagation();
-      this.controls.elements.more
-        .closest<HTMLElement>(".lvl-more-wrap")
-        ?.classList.toggle("is-more-open");
+      this.controls.elements.more.closest<HTMLElement>(".lvl-more-wrap")?.classList.toggle("is-more-open");
     });
     const onMoreAction = (event: MouseEvent) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-action]");
@@ -215,26 +201,15 @@ export class VideoViewer {
     document.addEventListener("click", closeMoreMenu);
     this.cleanup.push(() => {
       document.removeEventListener("click", closeMoreMenu);
-      this.controls.elements.more
-        .closest<HTMLElement>(".lvl-more-wrap")
-        ?.classList.remove("is-more-open");
+      this.controls.elements.more.closest<HTMLElement>(".lvl-more-wrap")?.classList.remove("is-more-open");
     });
-    on(this.controls.elements.rate, "change", () =>
-      this.controller.setRate(Number(this.controls.elements.rate.value)),
-    );
-    on(this.controls.elements.volume, "input", () =>
-      this.controller.setVolume(Number(this.controls.elements.volume.value)),
-    );
+    on(this.controls.elements.rate, "change", () => this.controller.setRate(Number(this.controls.elements.rate.value)));
+    on(this.controls.elements.volume, "input", () => this.controller.setVolume(Number(this.controls.elements.volume.value)));
     on(this.controls.elements.mute, "click", () => {
       this.controller.toggleMute();
       this.updatePlaybackUi();
     });
-    on(
-      this.controls.elements.pip,
-      "click",
-      () =>
-        void this.controller.togglePiP().catch(() => this.showStatus("PiPを開始できませんでした")),
-    );
+    on(this.controls.elements.pip, "click", () => void this.controller.togglePiP().catch(() => this.showStatus("PiPを開始できませんでした")));
     on(this.controls.elements.fullscreen, "click", () => void this.toggleWindowFullscreen());
     on(this.ui.timeline, "input", () => this.controller.seekTo(Number(this.ui.timeline.value)));
     on(this.ui.sideToggle, "click", () => {
@@ -291,11 +266,7 @@ export class VideoViewer {
 
     on(this.subtitlePanel.elements.toggle, "click", () => {
       const visible = this.subtitle.toggleVisibility();
-      setIconButton(
-        this.subtitlePanel.elements.toggle,
-        visible ? "eye-slash" : "eye",
-        visible ? "非表示" : "表示",
-      );
+      setIconButton(this.subtitlePanel.elements.toggle, visible ? "eye-slash" : "eye", visible ? "非表示" : "表示");
     });
 
     on(this.screenshotPanel.elements.capture, "click", () => {
@@ -305,30 +276,15 @@ export class VideoViewer {
     on(
       this.screenshotPanel.elements.copy,
       "click",
-      () =>
-        void this.screenshot
-          .copyToClipboard()
-          .then(() => this.showStatus("フレームをコピーしました")),
+      () => void this.screenshot.copyToClipboard().then(() => this.showStatus("フレームをコピーしました")),
     );
 
-    on(this.filterPanel.elements.brightness, "input", () =>
-      this.filter.setBrightness(Number(this.filterPanel.elements.brightness.value)),
-    );
-    on(this.filterPanel.elements.contrast, "input", () =>
-      this.filter.setContrast(Number(this.filterPanel.elements.contrast.value)),
-    );
-    on(this.filterPanel.elements.saturate, "input", () =>
-      this.filter.setSaturate(Number(this.filterPanel.elements.saturate.value)),
-    );
-    on(this.filterPanel.elements.rotation, "change", () =>
-      this.filter.setRotation(Number(this.filterPanel.elements.rotation.value)),
-    );
-    on(this.filterPanel.elements.flipH, "change", () =>
-      this.filter.setFlipH(this.filterPanel.elements.flipH.checked),
-    );
-    on(this.filterPanel.elements.flipV, "change", () =>
-      this.filter.setFlipV(this.filterPanel.elements.flipV.checked),
-    );
+    on(this.filterPanel.elements.brightness, "input", () => this.filter.setBrightness(Number(this.filterPanel.elements.brightness.value)));
+    on(this.filterPanel.elements.contrast, "input", () => this.filter.setContrast(Number(this.filterPanel.elements.contrast.value)));
+    on(this.filterPanel.elements.saturate, "input", () => this.filter.setSaturate(Number(this.filterPanel.elements.saturate.value)));
+    on(this.filterPanel.elements.rotation, "change", () => this.filter.setRotation(Number(this.filterPanel.elements.rotation.value)));
+    on(this.filterPanel.elements.flipH, "change", () => this.filter.setFlipH(this.filterPanel.elements.flipH.checked));
+    on(this.filterPanel.elements.flipV, "change", () => this.filter.setFlipV(this.filterPanel.elements.flipV.checked));
     on(this.filterPanel.elements.reset, "click", () => {
       this.filter.reset();
       this.filterPanel.elements.brightness.value = "100";
@@ -346,14 +302,7 @@ export class VideoViewer {
 
   private bindVideoEvents(): void {
     const video = this.ui.video;
-    for (const type of [
-      "loadedmetadata",
-      "timeupdate",
-      "play",
-      "pause",
-      "volumechange",
-      "ratechange",
-    ] as const) {
+    for (const type of ["loadedmetadata", "timeupdate", "play", "pause", "volumechange", "ratechange"] as const) {
       video.addEventListener(type, () => this.updatePlaybackUi());
     }
   }
@@ -396,10 +345,7 @@ export class VideoViewer {
       if (!this.dragSeek || event.pointerId !== this.dragSeek.pointerId) return;
       const secondsPerPixel = Math.max(0.05, Math.min(0.2, (this.ui.video.duration || 0) / 36000));
       const delta = (event.clientX - this.dragSeek.startX) * secondsPerPixel;
-      const nextTime = Math.max(
-        0,
-        Math.min(this.ui.video.duration || 0, this.dragSeek.startTime + delta),
-      );
+      const nextTime = Math.max(0, Math.min(this.ui.video.duration || 0, this.dragSeek.startTime + delta));
       this.dragSeek.targetTime = nextTime;
       this.dragSeek.moved = Math.abs(event.clientX - this.dragSeek.startX) > 4;
       this.ui.dragHud.textContent = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}s  ${formatTime(nextTime)}`;
@@ -493,24 +439,11 @@ export class VideoViewer {
       volume: video.volume,
       muted: video.muted,
     };
-    setIconButton(
-      this.controls.elements.play,
-      video.paused ? "play-fill" : "pause-fill",
-      video.paused ? "再生" : "一時停止",
-    );
-    setIconButton(
-      this.controls.elements.mute,
-      video.muted ? "volume-mute" : "volume-up",
-      video.muted ? "ミュート解除" : "ミュート",
-    );
+    setIconButton(this.controls.elements.play, video.paused ? "play-fill" : "pause-fill", video.paused ? "再生" : "一時停止");
+    setIconButton(this.controls.elements.mute, video.muted ? "volume-mute" : "volume-up", video.muted ? "ミュート解除" : "ミュート");
     this.controls.elements.volume.value = String(video.volume);
     this.controls.elements.rate.value = String(video.playbackRate);
-    updateTimeline(
-      this.ui.timeline,
-      this.controls.elements.timeLabel,
-      video.currentTime,
-      video.duration || 0,
-    );
+    updateTimeline(this.ui.timeline, this.controls.elements.timeLabel, video.currentTime, video.duration || 0);
   }
 
   private renderSkipList(): void {
@@ -578,11 +511,7 @@ export class VideoViewer {
     switch (action) {
       case "screenshot": {
         const format = `image/${this.state.settings.screenshotFormat}`;
-        void this.screenshot.capture(
-          this.currentName,
-          format,
-          this.state.settings.screenshotQuality,
-        );
+        void this.screenshot.capture(this.currentName, format, this.state.settings.screenshotQuality);
         break;
       }
       case "chapter":
@@ -609,22 +538,14 @@ export class VideoViewer {
   }
 
   private async toggleWindowFullscreen(): Promise<void> {
-    const response = await chrome.runtime
-      .sendMessage({ type: "LOCAL_VIDEO_LAB_TOGGLE_WINDOW_FULLSCREEN" })
-      .catch(() => null);
+    const response = await chrome.runtime.sendMessage({ type: "LOCAL_VIDEO_LAB_TOGGLE_WINDOW_FULLSCREEN" }).catch(() => null);
     const fullscreen = Boolean(response?.fullscreen);
-    setIconButton(
-      this.controls.elements.fullscreen,
-      fullscreen ? "fullscreen-exit" : "fullscreen",
-      fullscreen ? "全画面解除" : "全画面",
-    );
+    setIconButton(this.controls.elements.fullscreen, fullscreen ? "fullscreen-exit" : "fullscreen", fullscreen ? "全画面解除" : "全画面");
   }
 
   private updateLoopSummary(): void {
     const loop = this.state.loop;
-    this.controls.elements.loopSummary.textContent = loop
-      ? `${formatTime(loop.start)} - ${formatTime(loop.end)}`
-      : "ループ未設定";
+    this.controls.elements.loopSummary.textContent = loop ? `${formatTime(loop.start)} - ${formatTime(loop.end)}` : "ループ未設定";
     this.controls.elements.loopSummary.classList.toggle("is-active", Boolean(loop));
     this.updateCreateMode();
   }

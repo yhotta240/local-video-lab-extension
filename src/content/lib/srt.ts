@@ -31,9 +31,7 @@ export function parseSRT(text: string): SubtitleCue[] {
 
     // 2行目: タイムスタンプ
     const timeLine = lines[1];
-    const timeMatch = timeLine.match(
-      /(\d{2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{3})/,
-    );
+    const timeMatch = timeLine.match(/(\d{2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{3})/);
     if (!timeMatch) continue;
 
     const startTime = parseSrtTimestamp(timeMatch[1]);

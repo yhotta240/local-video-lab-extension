@@ -23,11 +23,9 @@ export interface ControlElements {
 }
 
 export function createControls(): { root: HTMLElement; elements: ControlElements } {
-  const play = el(
-    "button",
-    { class: "btn lvl-icon-btn lvl-play-btn", type: "button", title: "再生 / 一時停止" },
-    [el("i", { class: "bi bi-play-fill", "aria-hidden": "true" })],
-  ) as HTMLButtonElement;
+  const play = el("button", { class: "btn lvl-icon-btn lvl-play-btn", type: "button", title: "再生 / 一時停止" }, [
+    el("i", { class: "bi bi-play-fill", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
   const back = el("button", { class: "btn lvl-icon-btn", type: "button", title: "5秒戻る" }, [
     el("i", { class: "bi bi-rewind-fill", "aria-hidden": "true" }),
   ]) as HTMLButtonElement;
@@ -51,19 +49,15 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
   const mute = el("button", { class: "btn lvl-icon-btn", type: "button", title: "ミュート" }, [
     el("i", { class: "bi bi-volume-up", "aria-hidden": "true" }),
   ]) as HTMLButtonElement;
-  const pip = el(
-    "button",
-    { class: "btn lvl-icon-btn", type: "button", title: "ピクチャーインピクチャー" },
-    [el("i", { class: "bi bi-pip", "aria-hidden": "true" })],
-  ) as HTMLButtonElement;
+  const pip = el("button", { class: "btn lvl-icon-btn", type: "button", title: "ピクチャーインピクチャー" }, [
+    el("i", { class: "bi bi-pip", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
   const fullscreen = el("button", { class: "btn lvl-icon-btn", type: "button", title: "全画面" }, [
     el("i", { class: "bi bi-fullscreen", "aria-hidden": "true" }),
   ]) as HTMLButtonElement;
-  const screenshot = el(
-    "button",
-    { class: "btn lvl-icon-btn lvl-optional-control", type: "button", title: "スクリーンショット" },
-    [el("i", { class: "bi bi-camera", "aria-hidden": "true" })],
-  ) as HTMLButtonElement;
+  const screenshot = el("button", { class: "btn lvl-icon-btn lvl-optional-control", type: "button", title: "スクリーンショット" }, [
+    el("i", { class: "bi bi-camera", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
   const chapter = el(
     "button",
     {
@@ -73,46 +67,25 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
     },
     [el("i", { class: "bi bi-bookmark-plus", "aria-hidden": "true" })],
   ) as HTMLButtonElement;
-  const subtitles = el(
-    "button",
-    { class: "btn lvl-icon-btn lvl-optional-control", type: "button", title: "字幕を読み込む" },
-    [el("i", { class: "bi bi-badge-cc", "aria-hidden": "true" })],
-  ) as HTMLButtonElement;
-  const tools = el(
-    "button",
-    { class: "btn lvl-icon-btn lvl-tools-control", type: "button", title: "ツールパネル" },
-    [el("i", { class: "bi bi-sliders", "aria-hidden": "true" })],
-  ) as HTMLButtonElement;
-  const more = el(
-    "button",
-    { class: "btn lvl-icon-btn lvl-more-control", type: "button", title: "その他" },
-    [el("i", { class: "bi bi-three-dots", "aria-hidden": "true" })],
-  ) as HTMLButtonElement;
-  const loopStart = el(
-    "button",
-    { class: "btn lvl-mini-btn", type: "button", title: "ループ開始を現在時刻に設定" },
-    ["A"],
-  ) as HTMLButtonElement;
-  const loopEnd = el(
-    "button",
-    { class: "btn lvl-mini-btn", type: "button", title: "ループ終了を現在時刻に設定" },
-    ["B"],
-  ) as HTMLButtonElement;
-  const loopClear = el(
-    "button",
-    { class: "btn lvl-icon-btn", type: "button", title: "ループ解除" },
-    [el("i", { class: "bi bi-repeat", "aria-hidden": "true" })],
-  ) as HTMLButtonElement;
+  const subtitles = el("button", { class: "btn lvl-icon-btn lvl-optional-control", type: "button", title: "字幕を読み込む" }, [
+    el("i", { class: "bi bi-badge-cc", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
+  const tools = el("button", { class: "btn lvl-icon-btn lvl-tools-control", type: "button", title: "ツールパネル" }, [
+    el("i", { class: "bi bi-sliders", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
+  const more = el("button", { class: "btn lvl-icon-btn lvl-more-control", type: "button", title: "その他" }, [
+    el("i", { class: "bi bi-three-dots", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
+  const loopStart = el("button", { class: "btn lvl-mini-btn", type: "button", title: "ループ開始を現在時刻に設定" }, ["A"]) as HTMLButtonElement;
+  const loopEnd = el("button", { class: "btn lvl-mini-btn", type: "button", title: "ループ終了を現在時刻に設定" }, ["B"]) as HTMLButtonElement;
+  const loopClear = el("button", { class: "btn lvl-icon-btn", type: "button", title: "ループ解除" }, [
+    el("i", { class: "bi bi-repeat", "aria-hidden": "true" }),
+  ]) as HTMLButtonElement;
   const loopSummary = el("span", { class: "lvl-loop-summary" }, ["ループ未設定"]);
   const timeLabel = el("span", { class: "lvl-time" }, ["00:00 / 00:00"]);
   const root = el("div", { class: "lvl-controls-inner" }, [
     el("div", { class: "lvl-control-group lvl-playback-group" }, [play, back, forward, timeLabel]),
-    el("div", { class: "lvl-control-group lvl-loop-group" }, [
-      loopStart,
-      loopEnd,
-      loopClear,
-      loopSummary,
-    ]),
+    el("div", { class: "lvl-control-group lvl-loop-group" }, [loopStart, loopEnd, loopClear, loopSummary]),
     el("div", { class: "lvl-control-group lvl-create-group" }, [
       screenshot,
       chapter,
@@ -128,13 +101,7 @@ export function createControls(): { root: HTMLElement; elements: ControlElements
         ]),
       ]),
     ]),
-    el("div", { class: "lvl-control-group lvl-audio-group" }, [
-      rate,
-      volume,
-      mute,
-      pip,
-      fullscreen,
-    ]),
+    el("div", { class: "lvl-control-group lvl-audio-group" }, [rate, volume, mute, pip, fullscreen]),
   ]);
   return {
     root,

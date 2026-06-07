@@ -17,11 +17,7 @@ export function createSkipPanel(): { root: HTMLElement; elements: SkipPanelEleme
     class: "form-control form-control-sm",
     placeholder: "終了",
   }) as HTMLInputElement;
-  const add = el(
-    "button",
-    { class: "btn lvl-action-btn lvl-primary-btn", type: "button" },
-    iconLabel("plus-circle", "追加"),
-  ) as HTMLButtonElement;
+  const add = el("button", { class: "btn lvl-action-btn lvl-primary-btn", type: "button" }, iconLabel("plus-circle", "追加")) as HTMLButtonElement;
   const list = el("div", { class: "lvl-list" });
   const root = el("section", { class: "lvl-panel" }, [
     el("h2", {}, [el("i", { class: "bi bi-skip-forward", "aria-hidden": "true" }), "スキップ範囲"]),

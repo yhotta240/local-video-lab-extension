@@ -7,11 +7,7 @@ export interface SubtitlePanelElements {
 }
 
 export function createSubtitlePanel(): { root: HTMLElement; elements: SubtitlePanelElements } {
-  const toggle = el(
-    "button",
-    { class: "btn lvl-action-btn", type: "button" },
-    iconLabel("eye-slash", "非表示"),
-  ) as HTMLButtonElement;
+  const toggle = el("button", { class: "btn lvl-action-btn", type: "button" }, iconLabel("eye-slash", "非表示")) as HTMLButtonElement;
   const label = el("span", { class: "lvl-muted" }, ["字幕未読込"]);
   const root = el("section", { class: "lvl-panel" }, [
     el("h2", {}, [el("i", { class: "bi bi-badge-cc", "aria-hidden": "true" }), "字幕"]),

@@ -33,13 +33,7 @@ export function getLogs(): Promise<LogEntry[]> {
 /**
  * ログを1件追加する．MAX_LOG_SIZE を超えた場合は古いものを削除する
  */
-export async function addLog(
-  message: string,
-  level: LogLevel,
-  source: LogSource,
-  detail?: string,
-  hidden?: boolean,
-): Promise<void> {
+export async function addLog(message: string, level: LogLevel, source: LogSource, detail?: string, hidden?: boolean): Promise<void> {
   const entry: LogEntry = { message, timestamp: now(), level, source, detail, hidden };
   const logs = await getLogs();
   logs.push(entry);
@@ -63,11 +57,9 @@ export function clearLogs(): Promise<void> {
   });
 }
 
-export const logInfo = (message: string, source: LogSource, hidden?: boolean) =>
-  addLog(message, "info", source, undefined, hidden);
+export const logInfo = (message: string, source: LogSource, hidden?: boolean) => addLog(message, "info", source, undefined, hidden);
 
-export const logWarn = (message: string, source: LogSource, detail?: string, hidden?: boolean) =>
-  addLog(message, "warn", source, detail, hidden);
+export const logWarn = (message: string, source: LogSource, detail?: string, hidden?: boolean) => addLog(message, "warn", source, detail, hidden);
 
 export const logError = (message: string, source: LogSource, error?: unknown, hidden?: boolean) => {
   const detail = error instanceof Error ? error.message : error ? String(error) : undefined;
