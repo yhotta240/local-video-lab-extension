@@ -17,6 +17,7 @@ export interface Settings {
   defaultVolume: number;
   seekStep: number;
   seekStepLarge: number;
+  openPlaybackBehavior: "pause" | "play";
   screenshotFormat: "png" | "jpeg" | "webp";
   screenshotQuality: number;
   filters: FilterSettings;
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultVolume: 1,
   seekStep: 5,
   seekStepLarge: 10,
+  openPlaybackBehavior: "pause",
   screenshotFormat: "png",
   screenshotQuality: 0.92,
   filters: DEFAULT_FILTERS,

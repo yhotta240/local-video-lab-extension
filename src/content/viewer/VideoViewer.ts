@@ -1,5 +1,6 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/content.css";
+import { getSettings, setSettings } from "../../utils/storage";
 import { ChapterManager } from "../features/chapter";
 import { FilterManager } from "../features/filter";
 import { LoopManager } from "../features/loop";
@@ -14,6 +15,7 @@ import { createControls } from "../ui/createControls";
 import { createFilterPanel } from "../ui/createFilterPanel";
 import { createLoopPanel } from "../ui/createLoopPanel";
 import { createScreenshotPanel } from "../ui/createScreenshotPanel";
+import { createSettingsPanel } from "../ui/createSettingsPanel";
 import { createSkipPanel } from "../ui/createSkipPanel";
 import { createSubtitlePanel } from "../ui/createSubtitlePanel";
 import { updateTimeline } from "../ui/createTimeline";
@@ -41,6 +43,7 @@ export class VideoViewer {
   private readonly subtitlePanel = createSubtitlePanel();
   private readonly screenshotPanel = createScreenshotPanel();
   private readonly filterPanel = createFilterPanel();
+  private readonly settingsPanel = createSettingsPanel();
   private readonly controller: VideoController;
   private readonly loop: LoopManager;
   private readonly skip: SkipManager;
@@ -91,6 +94,7 @@ export class VideoViewer {
     this.ui.controls.appendChild(this.ui.timeline);
     this.ui.controls.appendChild(this.controls.root);
     this.ui.sidePanel.append(
+      this.settingsPanel.root,
       this.loopPanel.root,
       this.skipPanel.root,
       this.chapterPanel.root,
@@ -105,6 +109,7 @@ export class VideoViewer {
     this.shortcut.bind();
     this.bindControlLayout();
     this.bindPointerIdle();
+    void this.loadSettings();
 
     if (this.options.sourceUrl && this.options.sourceName && isProbablyVideoUrl(this.options.sourceName)) {
       this.loadUrl(this.options.sourceUrl, this.options.sourceName);
@@ -297,6 +302,11 @@ export class VideoViewer {
       this.filterPanel.elements.flipH.checked = false;
       this.filterPanel.elements.flipV.checked = false;
     });
+    on(this.settingsPanel.elements.openPlaybackBehavior, "change", () => {
+      this.state.settings.openPlaybackBehavior = this.settingsPanel.elements.openPlaybackBehavior
+        .value as typeof this.state.settings.openPlaybackBehavior;
+      void setSettings(this.state.settings).then(() => this.showStatus("設定を保存しました"));
+    });
 
     this.bindVideoEvents();
     this.bindDrop();
@@ -436,10 +446,17 @@ export class VideoViewer {
     });
   }
 
+  private async loadSettings(): Promise<void> {
+    this.state.settings = await getSettings();
+    this.settingsPanel.elements.openPlaybackBehavior.value = this.state.settings.openPlaybackBehavior;
+    if (this.ui.video.src) this.applyOpenPlaybackBehavior();
+  }
+
   private loadFile(file: File): void {
     if (this.currentObjectUrl) URL.revokeObjectURL(this.currentObjectUrl);
     this.currentObjectUrl = URL.createObjectURL(file);
     this.currentName = file.name;
+    this.applyOpenPlaybackBehaviorOnLoad();
     this.ui.video.src = this.currentObjectUrl;
     this.ui.video.load();
     this.ui.root.classList.remove("is-empty");
@@ -449,10 +466,26 @@ export class VideoViewer {
 
   private loadUrl(url: string, name: string): void {
     this.currentName = name;
+    this.applyOpenPlaybackBehaviorOnLoad();
     this.ui.video.src = url;
     this.ui.video.load();
     this.ui.root.classList.remove("is-empty");
     this.toolbar.elements.info.textContent = name;
+  }
+
+  private applyOpenPlaybackBehaviorOnLoad(): void {
+    this.ui.video.addEventListener("loadedmetadata", () => this.applyOpenPlaybackBehavior(), {
+      once: true,
+    });
+  }
+
+  private applyOpenPlaybackBehavior(): void {
+    if (this.state.settings.openPlaybackBehavior === "play") {
+      void this.ui.video.play().catch(() => this.showStatus("自動再生できませんでした"));
+      return;
+    }
+    this.ui.video.pause();
+    this.updatePlaybackUi();
   }
 
   private updatePlaybackUi(): void {

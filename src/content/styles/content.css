@@ -551,6 +551,13 @@
   margin-bottom: 0;
 }
 
+.lvl-field {
+  display: grid;
+  gap: 6px;
+  color: var(--lvl-muted);
+  font-size: 12px;
+}
+
 .lvl-list {
   display: grid;
   gap: 8px;
