@@ -411,25 +411,20 @@
   background: var(--lvl-glass);
   backdrop-filter: blur(16px);
   transform: translateY(-50%);
-  opacity: 0.42;
+  opacity: 0;
   transition:
     opacity 0.16s ease,
     background 0.16s ease;
 }
 
-.lvl-side-toggle:hover,
-.lvl-root.is-side-pinned .lvl-side-toggle {
-  opacity: 1;
+.lvl-root:has(.lvl-stage:hover) .lvl-side-toggle {
+  opacity: 0.42;
   background: var(--lvl-panel-hover);
 }
 
-.lvl-root.is-side-pinned .lvl-side-toggle {
+.lvl-root.is-side-pinned:has(.lvl-stage:hover) .lvl-side-toggle {
   opacity: 0;
   pointer-events: none;
-}
-
-.lvl-root.is-side-pinned .lvl-side-toggle .bi {
-  color: var(--lvl-accent);
 }
 
 .lvl-side-close {

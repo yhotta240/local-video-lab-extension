@@ -36,7 +36,7 @@ export function createViewerRoot(): ViewerRootElements {
       title: "ツールを固定",
       "aria-label": "ツールを固定",
     },
-    [el("i", { class: "bi bi-pin-angle", "aria-hidden": "true" })],
+    [el("i", { class: "bi bi-sliders", "aria-hidden": "true" })],
   ) as HTMLButtonElement;
   const sidePin = el(
     "button",

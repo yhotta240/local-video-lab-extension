@@ -1,5 +1,5 @@
 import { el } from "../lib/dom";
-import { iconLabel } from "./icon";
+import { icon } from "./icon";
 
 export interface ToolbarElements {
   fileInput: HTMLInputElement;
@@ -19,8 +19,8 @@ export function createToolbar(): { root: HTMLElement; elements: ToolbarElements 
     accept: ".vtt,.srt,text/vtt",
     class: "lvl-hidden-input",
   }) as HTMLInputElement;
-  const openButton = el("button", { class: "btn lvl-action-btn lvl-primary-btn", type: "button" }, iconLabel("folder2-open", "動画を開く"));
-  const subtitleButton = el("button", { class: "btn lvl-action-btn", type: "button" }, iconLabel("badge-cc", "字幕"));
+  const openButton = el("button", { class: "btn lvl-action-btn lvl-primary-btn", type: "button", title: "動画を開く" }, [icon("folder2-open")]);
+  const subtitleButton = el("button", { class: "btn lvl-action-btn", type: "button", title: "字幕" }, [icon("badge-cc")]);
   const title = el("strong", { class: "lvl-title" }, [el("i", { class: "bi bi-play-circle", "aria-hidden": "true" }), "Local Video Lab"]);
   const info = el("span", { class: "lvl-file-info" }, ["動画未選択"]);
   const root = el("div", { class: "lvl-toolbar-inner" }, [title, info, openButton, subtitleButton, fileInput, subtitleInput]);
