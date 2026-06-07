@@ -1,6 +1,6 @@
 {
   "name": "local-video-lab-extension",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "ローカル動画をブラウザ上で快適に閲覧するためのユーティリティビューア",
   "main": "index.js",
   "scripts": {

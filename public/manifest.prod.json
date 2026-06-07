@@ -2,13 +2,18 @@
   "manifest_version": 3,
   "name": "Local Video Lab",
   "short_name": "Local Video Lab",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "ローカル動画をブラウザ上で快適に閲覧するためのユーティリティビューア",
   "icons": {
     "48": "icons/icon.png"
   },
-  "permissions": ["storage", "clipboardWrite"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {},
   "background": {
     "service_worker": "background.js",
@@ -16,8 +21,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["file://*/*"],
-      "js": ["content.js"]
+      "matches": [
+        "file://*/*"
+      ],
+      "js": [
+        "content.js"
+      ]
     }
   ]
 }
